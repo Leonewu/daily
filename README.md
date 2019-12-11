@@ -1,2 +1,2 @@
 # daily
-daily code
+daily code, daily project, daily demo
