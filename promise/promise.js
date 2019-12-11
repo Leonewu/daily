@@ -1,7 +1,7 @@
 
 
 
-const queueMicrotask = window.queueMicrotask ? window.queueMicrotask : (process && process.nextTick ? process.nextTick : function() {
+const queueMicrotask = (window && window.queueMicrotask) ? window.queueMicrotask : (process && process.nextTick ? process.nextTick : function() {
   console.error('浏览器没有queueMicrotask方法')
 })
 
@@ -44,16 +44,14 @@ class Promise {
         if (this.resolveCallbacks.length) {
           while (this.resolveCallbacks.length) {
             const onResolve = this.resolveCallbacks.pop();
-            if (onResolve && typeof onResolve === "function") {
-              const result = onResolve(value);
-              // 如果有下一个promise，继续resolve
-              if (result instanceof Promise) {
-                result.then(v => {
-                  this.nextPromise && this.nextPromise._resolve(v);
-                });
-              } else {
-                this.nextPromise && this.nextPromise._resolve(result);
-              }
+            const result = onResolve(value);
+            // 如果有下一个promise，继续resolve
+            if (result instanceof Promise) {
+              result.then(v => {
+                this.nextPromise && this.nextPromise._resolve(v);
+              });
+            } else {
+              this.nextPromise && this.nextPromise._resolve(result);
             }
           }
         } else {
@@ -61,7 +59,8 @@ class Promise {
           this.nextPromise && this.nextPromise._resolve(value);
         }
       } catch (error) {
-        this._reject(error)
+        // 因为上面已经是把状态给修改成fulfilled了，所以reject会不生效，这个时候要将状态回滚为pending
+        this._resetAndReject(error)
       }
     }
   }
@@ -142,9 +141,9 @@ class Promise {
       this.reason = reason;
       if (this.rejectCallbacks.length) {
         // reject的优先级比catch高，如果有onReject，就执行onReject
-        while (this.rejectCallbacks.length) {
-          const onReject = this.rejectCallbacks.pop();
-          if (onReject) {
+        try {
+          while (this.rejectCallbacks.length) {
+            const onReject = this.rejectCallbacks.pop();
             const result = onReject(reason);
             if (result instanceof Promise) {
               result.then(
@@ -157,6 +156,9 @@ class Promise {
               );
             }
           }
+        } catch (error) {
+          /* 回滚状态并reject */
+          this._resetAndReject(error)
         }
       } else if (this.catchCallback) {
         queueMicrotask(() => {
@@ -180,6 +182,14 @@ class Promise {
       });
     }
     return new Promise();
+  }
+
+  _resetAndReject(reason) {
+    // 重置promise并且reject 在trycatch出错后要回滚状态后才能reject
+    this.state = 'pending'
+    this.value = undefined
+    this.reason = undefined
+    this._reject(reason)
   }
 
   all() {
