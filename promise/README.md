@@ -64,7 +64,7 @@ new Promise((reeolve, reject) => {
   console.log('外部then2', value);
 })
 ```
-### executor
+### 实现executor
 首先要实现new Promise(executor)的写法，调用promise的构造函数，传入一个参数为`resolve`和`reject`的函数，并立即执行   
 代码片段： 
 ```
@@ -78,9 +78,10 @@ constructor(executor) {
         executor(this._resolve.bind(this), this._reject.bind(this));
     }
 ``` 
-### resolve
-接着要实现`resolve`，`resolve`接受一个`value`，并且改变promise的状态 
-大致过程是，先执行自己的`onResolve`回调，执行完执行下一个`promise`的`resolve`，其中还要判断`onResolve`返回的是否为`promise`对象，是的话要等待这个promise
+### 实现resolve
+* `resolve`接受一个`value`，并且改变promise的状态 
+* `resolve`改变状态后，执行自己的`onResolve`回调
+* 执行下一个`promise`的`resolve`，其中还要判断`onResolve`返回的是否为`promise`对象，是的话要等待这个promise  
 代码片段：
 ```
 resolve(value) {
@@ -109,10 +110,10 @@ resolve(value) {
   }
 }
 ```
-### then
-调用`then`的时候有两种情况:
-* 一种是状态已经是`fulfilled`，这个时候就马上调用`onResolve`回调
-* 另一种是状态还是`pending`，这个时候要把`onResolve`存起来  
+### 实现then
+* 如果状态已经是`fulfilled`，这个时候就马上执行`onResolve`回调
+* 如果状态是`pending`，这个时候要把`onResolve`存起来 
+* `then`一直会返回一个`promise`对象 
 ```
 then(onResolve, onReject) {
   let promise = new Promise()
