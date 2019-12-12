@@ -1,22 +1,12 @@
-## 参考
-[掘金  promise A+ 规范](https://juejin.im/post/5c4b0423e51d4525211c0fbc)  
-[Youtube How JavaScript Promises Work Under the Hood](https://www.youtube.com/watch?v=C3kUMPtt4hY&t=247s)  
-[MDN queueMicrotask](https://developer.mozilla.org/zh-CN/docs/Web/API/HTML_DOM_API/Microtask_guide)
 
-## 总结
-* 每一个`then`都会返回一个新的`promise`
-* 链式调用时，`promise`是逐个从状态`pending`变成`fulfilled`/`rejected`的
-* 链式调用的`promise`处理有两种情况，一种是一直`resolve`，没有碰到`return new Promise`，这种情况下，一旦`resolve`了之后，就会不断地去调用下一个`promise`的`resolve`函数；另一种是`then`中`return new Promise`的情况，这种情况会用一个`promise`将这个`return的promise`包住，当`return的promise`的最后一个`then`已经`resolve`后，再去`resolve`外面的`promise`
-* 不管是`onResolve`，`onReject`，`catch`，都不是同步执行，而是放到microtask执行
-* `catch`的回调和then的`onReject`都是对错误的捕获，优先级是`onReject` > `catch`
-## 实现过程
-### 明确概念和流程 
+## 手写Promise过程
+### 概念和流程 
 1. `promise`中有三种状态，`pending`，`fulfilled`，`rejected`
-2. `promise`一旦`resolve`，他的状态马上变成`fulfilled`，并且会往下调用`then`中的onResolve函数
-3. `then`接收`onResolve`和`onReject`作为参数，如果这两个函数返回值为`promise`，则要等待这个`promise`，如果返回值不是`promise`，则将这个值传递给下一个`promise`
+2. 每一个`promise`一旦`resolve`，他的状态马上变成`fulfilled`，再执行自己的`onResolve`函数后，`resolve`下一个`promise`，依次类推
+3. `then`接收`onResolve`和`onReject`作为参数，如果这两个函数返回值为`promise`，则要等待这个`promise`，如果返回值不是`promise`，则将这个返回值传递给下一个`promise`
 4. `then`会返回一个`promise`对象
 ### 测试函数
-首先写两段测试代码  
+首先写一些主要的测试代码  
 ```
 <!-- 异步 -->
 new Promise((reeolve, reject) => {
@@ -45,6 +35,33 @@ new Promise((reeolve, reject) => {
 })
 .then(value => {
   console.log('then2', value)
+})
+```
+```
+<!-- 同步 异步 嵌套promise -->
+new Promise((reeolve, reject) => {
+  console.log('外部promise')
+  resolve(1)
+})
+.then(value => {
+  console.log('外部then1', value)
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      console.log('内部promise')
+      resolve(2)
+    }, 1000)
+  })
+  .then(value => {
+    console.log('内部then1', value);
+    return 3
+  })
+  .then(value => {
+    console.log('内部then2', value);
+    return 4
+  })
+})
+.then(value => {
+  console.log('外部then2', value);
 })
 ```
 ### executor
@@ -125,7 +142,15 @@ then(onResolve, onReject) {
   return promise
 }
 ```
-## 其他内容
-* `then`和`catch`的回调必须放到微任务队列执行的(`window.queueMicrotask`或者`proess.nextTick`)
-* 添加`try catch` 和 `reject`
+## 待完成
+* `then`和`catch`的回调必须放到微任务队列执行的(`window.queueMicrotask`或者`proess.nextTick`)，注意不是`setTimeout`
+* 添加`try catch` 和 `reject`，注意`catch`和`reject`都是异常捕获，并且发生异常的时候`catch`和`reject`会按照声明顺序，只执行一个最先声明的一个
 * 添加静态方法`resolve`和`reject`
+## 其他
+* 完整的代码可以参考下面的链接
+* https://github.com/Leonewu/daily/tree/master/promise 
+* 写完之后对`eventloop`，`microTask`，`macroTask`，`promise`的执行机制的理解都清晰很多了
+## 参考
+[掘金  promise A+ 规范](https://juejin.im/post/5c4b0423e51d4525211c0fbc)  
+[Youtube How JavaScript Promises Work Under the Hood](https://www.youtube.com/watch?v=C3kUMPtt4hY&t=247s)  
+[MDN queueMicrotask](https://developer.mozilla.org/zh-CN/docs/Web/API/HTML_DOM_API/Microtask_guide)
