@@ -65,8 +65,7 @@ new Promise((reeolve, reject) => {
 })
 ```
 ### 实现executor
-首先要实现new Promise(executor)的写法，调用promise的构造函数，传入一个参数为`resolve`和`reject`的函数，并立即执行   
-代码片段： 
+首先要实现new Promise(executor)的写法，调用promise的构造函数，传入一个参数为`resolve`和`reject`的函数，并立即执行
 ```
 constructor(executor) {
     this.state = "pending";
@@ -81,8 +80,7 @@ constructor(executor) {
 ### 实现resolve
 * `resolve`接受一个`value`，并且改变promise的状态 
 * `resolve`改变状态后，执行自己的`onResolve`回调
-* 执行下一个`promise`的`resolve`，其中还要判断`onResolve`返回的是否为`promise`对象，是的话要等待这个promise  
-代码片段：
+* 执行下一个`promise`的`resolve`，其中还要判断`onResolve`返回的是否为`promise`对象，是的话要等待这个promise
 ```
 resolve(value) {
   if (this.state === 'pending') {
@@ -152,6 +150,6 @@ then(onResolve, onReject) {
 * https://github.com/Leonewu/daily/tree/master/promise 
 * 写完之后对`eventloop`，`microTask`，`macroTask`，`promise`的执行机制的理解都清晰很多了
 ## 参考
-[掘金  promise A+ 规范](https://juejin.im/post/5c4b0423e51d4525211c0fbc)  
-[Youtube How JavaScript Promises Work Under the Hood](https://www.youtube.com/watch?v=C3kUMPtt4hY&t=247s)  
-[MDN queueMicrotask](https://developer.mozilla.org/zh-CN/docs/Web/API/HTML_DOM_API/Microtask_guide)
+* [掘金  promise A+ 规范](https://juejin.im/post/5c4b0423e51d4525211c0fbc)  
+* [Youtube How JavaScript Promises Work Under the Hood](https://www.youtube.com/watch?v=C3kUMPtt4hY&t=247s)  
+* [MDN queueMicrotask](https://developer.mozilla.org/zh-CN/docs/Web/API/HTML_DOM_API/Microtask_guide)
