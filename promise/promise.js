@@ -19,7 +19,7 @@ class Promise {
       try {
         executor(this._resolve.bind(this), this._reject.bind(this));
       } catch (e) {
-        this._reject(e)
+        this._resetAndReject(e)
       }
     }
   }
