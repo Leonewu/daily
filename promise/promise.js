@@ -19,7 +19,7 @@ class Promise {
       try {
         executor(this._resolve.bind(this), this._reject.bind(this));
       } catch (e) {
-        this._resetAndReject(e)
+        this._resetAndReject(e);
       }
     }
   }
@@ -60,7 +60,7 @@ class Promise {
         }
       } catch (error) {
         // 因为上面已经是把状态给修改成fulfilled了，所以reject会不生效，这个时候要将状态回滚为pending
-        this._resetAndReject(error)
+        this._resetAndReject(error);
       }
     }
   }
@@ -158,7 +158,7 @@ class Promise {
           }
         } catch (error) {
           /* 回滚状态并reject */
-          this._resetAndReject(error)
+          this._resetAndReject(error);
         }
       } else if (this.catchCallback) {
         queueMicrotask(() => {
@@ -186,10 +186,10 @@ class Promise {
 
   _resetAndReject(reason) {
     // 重置promise并且reject 在trycatch出错后要回滚状态后才能reject
-    this.state = 'pending'
-    this.value = undefined
-    this.reason = undefined
-    this._reject(reason)
+    this.state = "pending";
+    this.value = undefined;
+    this.reason = undefined;
+    this._reject(reason);
   }
 
   all() {
