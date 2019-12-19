@@ -1,34 +1,36 @@
 
 /* 
-  正则速记： 
-  \d 代表 digit  \w 代表 word \s 代表space
-  大写代表反集
-  (a|b) a或者b，不一定要用括号，也可在断言中使用， [a-z0-9a-Z] 这个集合里的内容 [^abc] 除了abc 
-  捕获(\d) 反捕获 (?:\d)
-  前断言 windows(?=\d) 或者 windows(?!=\d)
-  后断言 (?<=\d)windows 或者 (?<!\d)windows
-  开头^ 结束$
-  次数 +: >=1 *: >=0 ?: 0或1 区间写法{0,}
-  模式： g全局模式 m多行multiple匹配 i大小写不敏感
+  正则速记 
+    \d 代表 digit  \w 代表 word \s 代表space
+    大写代表反集
+    或逻辑：(a|b) a或者b，不一定要用括号，也可在断言中使用
+    集合：[a-z0-9a-Z] 这个集合里的内容 
+    反集：[^abc] 除了abc 
+    捕获(\d) 反捕获 (?:\d) 捕获可以再replace，exec，match获取，注意在match中如果是全局模式就获取不了捕获
+    前断言 windows(?=\d) 或者 windows(?!=\d)
+    后断言 (?<=\d)windows 或者 (?<!\d)windows
+    开头^ 结束$
+    次数 +: >=1 *: >=0 ?: 0或1 区间写法{0,}
+    模式： g全局模式 m多行multiple匹配 i大小写不敏感
 
   javascript 中 replace的用法
-  这里只说明replace的回调函数的参数
-  match, groups, offset, string
-  match就是匹配到的字符串
-  groups就是捕获组，即()里面的内容
-  offset就是下标
-  string就是原字符串
+    这里只说明replace的回调函数的参数
+    match, groups, offset, string
+    match就是匹配到的字符串
+    groups就是捕获组，即()里面的内容
+    offset就是下标
+    string就是原字符串
 
   javascript 中 match 注意事项
-  match 在全局模式下不会返回捕获组
+    match 在全局模式下不会返回捕获组
 
-  使用 new RegExp() 构造函数创建正则对象时需注意对反斜杠的转义，不然会报错
-  new RegExp('\\w+', 'g', 'i')
+  使用 new RegExp()注意事项 
+    构造函数创建正则对象时需注意对反斜杠的转义，不然会报错
+    如 new RegExp('\\w+', 'g', 'i')
+    javascript中RegExp对象是有状态的，可以多次调用regexp.exec(str)来获取每一次的结果
 
-  javascript中RegExp对象是有状态的，可以使用regexp.exec(str)来循环获取捕获组的结果
-  可以看url转对象的函数
-
-  https://regex101.com  https://regexper.com/
+  调试链接
+    https://regex101.com  https://regexper.com/
 */
 
 
