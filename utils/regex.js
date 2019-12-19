@@ -51,11 +51,12 @@ const trim = str => {
 
 // 千分位逗号
 const commafy = str => {
-  if (!str) return ''
-  let arr = str.split('.')
-  let int_part = '', float_part = ''
-  int_part = arr[0] ? arr[0].replace(/(\B)(?=(?:\d{3})+$)/g, ',') : ''
-  float_part = arr[1] ? '.' + arr[1] : ''
+  if (typeof str !== 'string' && typeof str !== 'number') {
+    return ''
+  }
+  const arr = str.toString().split('.')
+  const float_part = arr[1] ? '.' + arr[1] : ''
+  const int_part = arr[0].replace(/(\B)(?=(?:\d{3})+$)/g, ',')
   return int_part + float_part
 }
 
