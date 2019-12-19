@@ -1,13 +1,17 @@
 ## 面试题系列
 ### css
 * 垂直居中，低版本浏览器垂直居中
-* flex
-* 三栏布局
+* flex（space-between和space-around的区别）
+* 三栏布局（两边固定中间不固定）
 * BFC
 * 遇到过哪些css兼容问题
 ### js
 * 继承以及原型链
 * 深拷贝浅拷贝
+* debounce和throttle
+* 写过哪些公共的js函数
+### 正则
+* 邮箱 url trim 电话号码 身份证号 模板替换
 ### 计算机网路
 * https流程
 * http2.0
@@ -30,6 +34,7 @@
 * vue3.0与2.0
 * nextTick和setTimeout的区别
 * 全局eventBus怎么写
+* vue中的watch
 #### react
 * redux数据流
 * redux和mobx的区别
@@ -52,8 +57,13 @@
 * 快排
 * 二分查找及时间复杂度
 * 二叉树广度优先遍历
+### 设计模式
+* 单例模式
+* 工厂模式
+* 发布订阅者模式
 ### 针对项目问
 * 项目中碰到比较大问题是什么
+  * nwjs有两个runtime，由此重构成mvc
 * 哪个项目难度比较大，为什么
 * 你觉得graphql和restful的优缺点
 * 有没有对比过nw和electron
