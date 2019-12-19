@@ -3,7 +3,7 @@
   正则速记： 
   \d 代表 digit  \w 代表 word \s 代表space
   大写代表反集
-  (a|b) a或者b [a-z0-9a-Z] 这个集合里的内容 [^abc] 除了abc 
+  (a|b) a或者b，不一定要用括号，也可在断言中使用， [a-z0-9a-Z] 这个集合里的内容 [^abc] 除了abc 
   捕获(\d) 反捕获 (?:\d)
   前断言 windows(?=\d) 或者 windows(?!=\d)
   后断言 (?<=\d)windows 或者 (?<!\d)windows
@@ -18,6 +18,16 @@
   groups就是捕获组，即()里面的内容
   offset就是下标
   string就是原字符串
+
+  javascript 中 match 注意事项
+  match 在全局模式下不会返回捕获组
+
+  使用 new RegExp() 构造函数创建正则对象时需注意对反斜杠的转义，不然会报错
+  new RegExp('\\w+', 'g', 'i')
+
+  javascript中RegExp对象是有状态的，可以使用regexp.exec(str)来循环获取捕获组的结果
+  可以看url转对象的函数
+
   https://regex101.com  https://regexper.com/
 */
 
@@ -65,3 +75,31 @@ const getTag = (tag, str) => {
   return str.match(reg)
 }
 
+// query to obj
+const getUrlParams = (url) => {
+  /* 
+    将url query转成对象
+    注意事项： 对中文的接码，exec的用法
+   */
+  if (!url) return {}
+  url = decodeURI(url)
+  const params = {}
+  const reg = /(?<=\?|&)([^=]+)=([^?&#]*)/g
+  let result = reg.exec(url)
+  while (result !== null) {
+    params[result[1]] = result[2]
+    result = reg.exec(url)
+  }
+  return params
+}
+
+// get url value by key
+const getUrlParam = (key, url) => {
+  /* 根据key获取url的值 */
+  if (!key || !url) return null
+  url = decodeURI(url)
+  const reg = new RegExp('(?<=\\?|&)' + key + '=' + '([^?&=]*)', 'g')
+  const result = reg.exec(url)
+  if (result === null) return null
+  return result[1]
+}
