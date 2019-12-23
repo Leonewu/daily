@@ -1,5 +1,25 @@
-const deepCopy = (obj) => {
 
+/* 深拷贝 */
+const deepCopy = (obj) => {
+  function _typeof(obj) {
+    // {'Object'|'String'|'Undefined'|'Null'|'Array'|'Number'}
+    return Object.prototype.toString.call(obj).match(/\[object\s([a-zA-Z]+)\]/)[1]
+  }
+  let newObj
+  if (_typeof(obj) === 'Object') {
+    newObj = {}
+    Object.keys(obj).forEach(key => {
+      newObj[key] = deepCopy(obj[key])
+    })
+  } else if (_typeof(obj) === 'Array') {
+    newObj = []
+    obj.forEach(val => {
+      newObj.push(deepCopy(val))
+    })
+  } else {
+    return obj
+  }
+  return newObj
 }
 
 const debounce = (fn, delay) => {
@@ -10,11 +30,12 @@ const throttle = (fn, delay) => {
 
 }
 
+/** trim */
 const trim = (str) => {
   return str.replace(/^\s+/, '').replace(/\s+$/, '')
 }
 
-
+/* 将url query转成对象  */
 const getUrlParams = (url) => {
   /* 
     将url query转成对象
@@ -75,6 +96,7 @@ const myBind = function(that, ...args) {
 }
 Function.prototype.myBind = myBind
 
+
 const sleep = (delay) => {
   return new Promise(resolve => {
     setTimeout(() => {
@@ -83,9 +105,26 @@ const sleep = (delay) => {
   })  
 }
 
+
 const descates = () => {
   // 笛卡尔乘积，场景：两个sku的笛卡尔积
+  var a = [{ name: '红色' }]
+  var b = [{ name: 'S' }, { name: 'M' }]
+
+  function descates(...args) {
+    return args.reduce((acc, cur) => {
+      const res = []
+      acc.forEach(a => {
+        cur.forEach(b => {
+          res.push(a.concat([b]))
+        })
+      })
+      return res
+    }, [[]])
+  }
+
 }
+
 
 const currify = () => {
   /* 柯里化主要是方便对函数的复用，将基本的传参固定，生成一个固定参数的函数，然后将可以将剩余的参数分多次传入 */
@@ -98,6 +137,7 @@ const currify = () => {
   }
 }
 
+
 const commafy = (str) => {
   // 千分位
   if (typeof str !== 'string' && typeof str !== 'number') {
@@ -109,11 +149,13 @@ const commafy = (str) => {
   return int_part + float_part
 }
 
+
 const randomNum = (min, max) => {
   if (min >= max) return false
   return min + Math.floor(Math.random() * (max - min))
 }
 
+/* 精度运算 */
 
 
 const add = function (num1, num2) {
