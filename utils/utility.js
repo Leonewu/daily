@@ -1,21 +1,31 @@
 
-/* 深拷贝 */
-const deepCopy = (obj) => {
+/* 深拷贝 注意循环引用的时候 */
+const deepCopy = (obj, map = new Map()) => {
   function _typeof(obj) {
     // {'Object'|'String'|'Undefined'|'Null'|'Array'|'Number'}
     return Object.prototype.toString.call(obj).match(/\[object\s([a-zA-Z]+)\]/)[1]
   }
   let newObj
   if (_typeof(obj) === 'Object') {
-    newObj = {}
-    Object.keys(obj).forEach(key => {
-      newObj[key] = deepCopy(obj[key])
-    })
+    if (map.has(obj)) {
+      newObj = map.get(obj)
+    } else {
+      newObj = {}
+      map.set(obj, newObj)
+      Object.keys(obj).forEach(key => {
+        newObj[key] = deepCopy(obj[key], map)
+      })
+    }
   } else if (_typeof(obj) === 'Array') {
-    newObj = []
-    obj.forEach(val => {
-      newObj.push(deepCopy(val))
-    })
+    if (map.has(obj)) {
+      newObj = map.get(obj)
+    } else {
+      newObj = []
+      map.set(obj, newObj)
+      obj.forEach(val => {
+        newObj.push(deepCopy(val, map))
+      })
+    }
   } else {
     return obj
   }
