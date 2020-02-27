@@ -76,5 +76,89 @@ new Promise((resolve, reject) => {
     console.log(2)
   }
 
+  // 变量提升，题2
+  console.log(a)
+  a()
+  var a = 1
+  function a() {
+    console.log(10)
+  }
+  function a() {
+    console.log(20)
+  }
+  console.log(a)
+  a = 2
+  a()
+
+  // 作用域问题
+  for (var i = 1; i < 4; i++) { }
+  console.log(i)
+
+  // 块级作用域 + 变量提升（考察 块级作用域，词法环境，变量环境）
+  function foo() {
+    var a = 1
+    let b = 2
+    {
+      let b = 3
+      var c = 4
+      let d = 5
+      console.log(a)
+      console.log(b)
+    }
+    console.log(b)
+    console.log(c)
+    console.log(d)
+  }
+  foo()
+
+  // 考察this指向
+
+  this.a = 20
+  function go() {
+    console.log(this.a)
+    this.a = 30
+  }
+  go.prototype.a = 40
+  var test = {
+    a: 50,
+    init: function(fn) {
+      fn()
+      console.log(this.a)
+      return fn
+    }
+  }
+  console.log(new go().a)
+  test.init(go)
+  var p = test.init(go)
+  p()
+
+
+  // 闭包的原理（通过函数作用域将函数内变量永久保存起来）
+  // 闭包的原理（作用域链）
+
+
+
   // es6中的const和let和var的区别，内存暂死区
   // 即let和const上面都是暂死区，不能访问，访问就会报错
+  // function 表达式定义的函数提升优先级比变量提升高
+  // function f() { var a = b = 2 } 这个b是挂在windows上的
+
+
+  // onload 和 ready 的区别
+  // onload 是所有静态资源加载完毕 ready 是 dom 结构加载完毕
+  // async 和 defer 的区别 查一下？TODO
+  // 两者在下载js文件的时候并不会阻塞dom的解析
+  // async 在下载完毕后马上执行，可用于打印时间点
+  // defer 在 DomContentLoad 的时候执行，即先下载文件，在 dom 结构生成后执行，这个可以用于预加载 js 文件
+
+  // prefetch preload （vue 打包出来的文件有  prefetch 还是 preload ？）
+  // preload 解析头的时候去请求 ？
+  // prefetch ？
+
+  // https
+  // https://juejin.im/post/5e11ff54e51d4541013f12ba
+  // https://github.com/ljianshu/Blog/issues/50
+
+  // 缓存 ，强缓存200（from cache），协商缓存（304）
+
+  // 规范 git https://juejin.im/post/5d0b3f8c6fb9a07ec07fc5d0
