@@ -7,7 +7,7 @@
 * 遇到过哪些css兼容问题
 ### js
 * 继承以及原型链
-* 深拷贝浅拷贝
+* 深拷贝浅拷贝，深拷贝循环引用处理
 * debounce和throttle
 * 写过哪些公共的js函数
 ### 正则
@@ -35,6 +35,7 @@
 * nextTick和setTimeout的区别
 * 全局eventBus怎么写
 * vue中的watch
+* 组件和指令的区别
 #### react
 * redux数据流
 * redux和mobx的区别
@@ -47,6 +48,9 @@
 * 垃圾回收
 ### webpack
 * 打包原理
+### 小程序
+* 小程序底层原理
+* 小程序框架npm原理
 ### 模块化
 * iife
 * amd（require，defined）
@@ -67,3 +71,5 @@
 * 哪个项目难度比较大，为什么
 * 你觉得graphql和restful的优缺点
 * 有没有对比过nw和electron
+### 离职原因
+* 管理流程混乱，文档机制，规范
