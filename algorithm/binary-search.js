@@ -2,8 +2,9 @@
 // 在有序数组中找到下标，没有找到返回 -1
 const recursion_binary_search = (arr, target, start, end) => {
   start = start || 0
-  end = end || arr.length - 1
+  end = typeof end === 'number' ? end : arr.length - 1
   const mid = parseInt((start + end) / 2)
+  if (start > end) return -1
   if (arr[mid] === target) {
     return mid
   } else if (arr[mid] < target) {
