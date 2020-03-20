@@ -14,12 +14,13 @@
 * promise 和 async await使用场景，多个 await 怎么捕获异常
 * 列举 es6 新语法
 * Symbol 有什么用
+* 实现控制请求并发数量
 ### 正则
 * 邮箱 url trim 电话号码 身份证号 模板替换
 ### 计算机网路
 * https 流程
 * http2.0
-* 浏览器缓存(强缓存和协商缓存)
+* 浏览器缓存(强缓存和协商缓存)，etag 和 last-modified 的区别
 * tcp 三次握手和四次挥手
 * tcp 和 udp
 ### 性能优化
@@ -36,10 +37,12 @@
 * 双向绑定原理
 * 生命周期
 * vue3.0 与 2.0
-* nextTick 和 setTimeout 的区别
+* vue 异步渲染指的是什么，会出现什么问题
+* vue 中的 nextTick 怎么实现
 * 全局 eventBus 怎么写
 * vue 中的 watch，可否 watch 数组或者对象
 * 组件和指令的区别
+* vue 中 key 的作用，dom diff 中和 key 相关的流程
 * hash 模式和 history 模式有什么区别
 * vue 中 publicPath 找不到的问题
 #### react
@@ -48,6 +51,9 @@
 * setState 异步同步问题
 * react hooks
 * function component 和 class component 区别
+* react hooks 有什么缺点
+* react 中 key 的作用
+* mobx 过于松散，怎么约束
 #### vue和react的区别
 ### webkit/v8
 * eventloop，microTask，macroTask
@@ -59,6 +65,7 @@
 ### 小程序
 * 小程序底层原理
 * 小程序框架 npm 原理
+* 小程序 setData 发生什么
 ### 模块化
 * iife
 * amd（require，defined）
