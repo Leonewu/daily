@@ -32,4 +32,4 @@
 * ui 组件库有 element-ui 等
 * 脚手架有 vue-cli，vue-element-admin
 * mixin
-* composition api
+* composition api 拥抱函数式编程
