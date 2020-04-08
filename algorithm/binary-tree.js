@@ -53,3 +53,10 @@ var bfs_print = function (node, target) {
     if (node.right) que.push(node.right)
   }
 }
+
+// 树反转 
+function reserve(node) {
+  [node.left, node.right] = [node.right, node.left]
+  node.left && reverse(node.left)
+  node.right && reverse(node.right)
+}
