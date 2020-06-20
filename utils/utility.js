@@ -207,3 +207,22 @@ const devide = function (num1, num2) {
   const scale = Math.max(num1_scale, num2_scale)
   return (Math.pow(10, scale) * num1) / (Math.pow(10, scale) * num2)
 }
+
+// 数组中任意选取 n 个元素
+// combine([1, 2, 3, 4], 3)
+const combine = function(left, n, right = [], res = []) {
+  if (n == 0) {
+    res.push(right)
+    return res
+  }
+  if (left.length == n) {
+    res.push(right.concat(left))
+    return res
+  }
+  for (var i = 0; i <= left.length - n; i++) {
+    var temp = right.slice()
+    temp.push(left[i])
+    combine(left.slice(i + 1), n - 1, temp, res)
+  }
+  return res
+}
