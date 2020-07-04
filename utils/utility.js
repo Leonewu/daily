@@ -209,7 +209,6 @@ const devide = function (num1, num2) {
 }
 
 // 数组中任意选取 n 个元素
-// combine([1, 2, 3, 4], 3)
 const combine = function(left, n, right = [], res = []) {
   if (n == 0) {
     res.push(right)
@@ -226,3 +225,4 @@ const combine = function(left, n, right = [], res = []) {
   }
   return res
 }
+combine([1, 2, 3, 4], 3)
