@@ -17,7 +17,7 @@ function glob(str) {
   // 最后的结果是否为目录
   const shouldPickDir = str.substr(-1) === '/'
   const entry = str.match(/([^*{}]+)\//)[1]
-  let fileNames = [], fileExts = [] 
+  let fileNames = [], fileExts = []
   const routes = str.replace(entry, '').split('/')
   if (routes[routes.length - 1] && routes[routes.length - 1].includes('.')) {
     // 有指定文件名
@@ -89,8 +89,8 @@ function glob(str) {
     } else if (/\{(.+)\}/.test(route)) {
       // {} 的情况
       const conditions = route.match(/\{(.+)\}/)[1].split(',')
-      const includeDirs = conditions.filter(s => !s.includes('!'))
-      const excludeDirs = conditions.filter(s => s.includes('!'))
+      const includeDirs = conditions.filter(s => s => s[0] !== '!')
+      const excludeDirs = conditions.filter(s => s => s[0] === '!').map(s => s.substr(1))
       if (index === 0) {
         if (index === routes.length - 1 && !shouldPickDir) {
           // 刚好第一层就是最后一层，并且不用只筛出目录
@@ -124,6 +124,10 @@ function glob(str) {
   files = results[results.length - 1]
   // 过滤最后的文件名
   if (fileNames.length || fileExts.length) {
+    const includeNames = fileNames.filter(s => s[0] !== '!')
+    const excludeNames = fileNames.filter(s => s[0] === '!').map(s => s.substr(1))
+    const includeExts = fileExts.filter(s => !s[0] !== '!')
+    const excludeExts = fileExts.filter(s => s[0] === '!').map(s => s.substr(1))
     files = files.filter(filePath => {
       const file = filePath.match(/([^./]+\.[^./]+)$/)
       if (!file) {
@@ -131,9 +135,14 @@ function glob(str) {
       }
       const name = file[0].split('.')[0]
       const ext = file[0].split('.')[1]
-      const includeName = fileNames.includes(name) || fileNames.includes('*')
-      const includeExt = fileExts.includes(ext) || fileExts.includes('*')
-      if (includeName && includeExt) {
+      const hasExcludeName = excludeNames.includes(name)
+      const hasExcludeExt = excludeExts.includes(ext)
+      if (hasExcludeName || hasExcludeExt) {
+        return false
+      }
+      const hasIncludeName = includeNames.includes(name) || includeNames.includes('*')
+      const hasIncludeExt = includeExts.includes(ext) || includeExts.includes('*')
+      if (hasIncludeName && hasIncludeExt) {
         return true
       }
       return false
