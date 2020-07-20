@@ -13,6 +13,7 @@ const fs = require('fs-extra')
 // 5. 遍历过程中，从第二层开始的父路径，都从 results 拿
 // 6. 遍历结束，从结果 results 中拿出最后一层的结果，再根据 {index}.{vue} 之类的条件过滤
 function glob(str) {
+  console.log(str)
   let files = []
   // 最后的结果是否为目录
   const shouldPickDir = str.substr(-1) === '/'
@@ -22,6 +23,7 @@ function glob(str) {
   if (routes[routes.length - 1] && routes[routes.length - 1].includes('.')) {
     // 有指定文件名
     const file = routes.pop().split('.')
+    if (file.length !== 2) throw new Error(`pattern ${file.join('.')} is invalid`)
     if (/\{(.+)\}/.test(file[0])) {
       fileNames = file[0].match(/\{(.+)\}/)[1].split(',')
     } else {
@@ -89,17 +91,23 @@ function glob(str) {
     } else if (/\{(.+)\}/.test(route)) {
       // {} 的情况
       const conditions = route.match(/\{(.+)\}/)[1].split(',')
-      const includeDirs = conditions.filter(s => s => s[0] !== '!')
-      const excludeDirs = conditions.filter(s => s => s[0] === '!').map(s => s.substr(1))
+      const includeDirs = conditions.filter(s => s[0] !== '!')
+      const excludeDirs = conditions.filter(s => s[0] === '!').map(s => s.substr(1))
       if (index === 0) {
         if (index === routes.length - 1 && !shouldPickDir) {
           // 刚好第一层就是最后一层，并且不用只筛出目录
           res = fs.readdirSync(entry).filter(s => {
-            return includeDirs.includes(s) && !excludeDirs.includes(s)
+            if (includeDirs.length && !includeDirs.includes('*')) {
+              return includeDirs.includes(s) && !excludeDirs.includes(s)
+            }
+            return !excludeDirs.includes(s)
           }).map(s => `${entry}/${s}`)
         } else {
           res = fs.readdirSync(entry).filter(s => {
-            return includeDirs.includes(s) && !excludeDirs.includes(s)
+            if (includeDirs.length && !includeDirs.includes('*')) {
+              return includeDirs.includes(s) && !excludeDirs.includes(s)
+            }
+            return !excludeDirs.includes(s)
           }).map(s => `${entry}/${s}`)
           res = res.filter(p => isDirectory(p))
         }
@@ -107,7 +115,10 @@ function glob(str) {
         // 不是第一个 *
         results[index - 1].forEach(parent => {
           const sub = fs.readdirSync(parent).filter(s => {
-            return includeDirs.includes(s) && !excludeDirs.includes(s)
+            if (includeDirs.length && !includeDirs.includes('*')) {
+              return includeDirs.includes(s) && !excludeDirs.includes(s)
+            }
+            return !excludeDirs.includes(s)
           }).map(s => `${parent}/${s}`)
           if (index < routes.length - 1 || shouldPickDir) {
             // 不是最后一个
@@ -126,7 +137,7 @@ function glob(str) {
   if (fileNames.length || fileExts.length) {
     const includeNames = fileNames.filter(s => s[0] !== '!')
     const excludeNames = fileNames.filter(s => s[0] === '!').map(s => s.substr(1))
-    const includeExts = fileExts.filter(s => !s[0] !== '!')
+    const includeExts = fileExts.filter(s => s[0] !== '!')
     const excludeExts = fileExts.filter(s => s[0] === '!').map(s => s.substr(1))
     files = files.filter(filePath => {
       const file = filePath.match(/([^./]+\.[^./]+)$/)
@@ -155,7 +166,7 @@ function getAllPath(filePath, shouldPickDir) {
   // 获取路径下的所有文件或者文件夹
   let res = []
   res.push(filePath)
-  if (fs.lstatSync(filePath).isDirectory()) {
+  if (isDirectory(filePath)) {
     const subPath = fs.readdirSync(filePath).map(p => `${filePath}/${p}`)
     subPath.forEach(p => {
       const sub = getAllPath(p, shouldPickDir)
@@ -172,6 +183,7 @@ function isDirectory(filePath) {
   return fs.lstatSync(filePath).isDirectory()
 }
 
+
 // console.log(glob('/home/leone/lib/*/'))
 // console.log(glob('/home/leone/lib/*'))
 // select 下第二层目录的所有文件和文件夹 select/components/index.vue
@@ -187,7 +199,9 @@ function isDirectory(filePath) {
 // console.log(glob('/home/leone/lib/xiao-ui/src/select/**/*.{vue,md}'))
 // select 下的指定目录目录下的所有文件和文件夹
 // console.log(glob('/home/leone/lib/xiao-ui/src/{select}/{*,!components}/**/*'))
+console.log(glob('/home/leone/lib/xiao-ui/src/{select}/{*,!components}/**/*'))
 // console.log(glob('/home/leone/lib/xiao-ui/package.json'))
+
 
 
 
