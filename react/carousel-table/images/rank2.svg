@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 22.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="图层_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 24 24" style="enable-background:new 0 0 24 24;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#D8D8D8;fill-opacity:0;}
+	.st1{fill-opacity:0;}
+	.st2{fill:url(#path-2_2_);}
+	.st3{filter:url(#filter-3);}
+	.st4{fill:#495E69;}
+</style>
+<filter  filterUnits="objectBoundingBox" height="133.3%" id="filter-3" width="133.3%" x="-16.7%" y="-16.7%">
+	<feGaussianBlur  in="SourceAlpha" result="shadowBlurInner1" stdDeviation="3.5"></feGaussianBlur>
+	<feOffset  dx="0" dy="0" in="shadowBlurInner1" result="shadowOffsetInner1"></feOffset>
+	<feComposite  in="shadowOffsetInner1" in2="SourceAlpha" k2="-1" k3="1" operator="arithmetic" result="shadowInnerInner1">
+		</feComposite>
+	
+		<feColorMatrix  in="shadowInnerInner1" result="shadowMatrixInner1" type="matrix" values="0 0 0 0 0.648918705   0 0 0 0 0.648918705   0 0 0 0 0.648918705  0 0 0 0.7 0">
+		</feColorMatrix>
+	<feGaussianBlur  in="SourceAlpha" result="shadowBlurInner2" stdDeviation="1"></feGaussianBlur>
+	<feOffset  dx="-2" dy="-2" in="shadowBlurInner2" result="shadowOffsetInner2"></feOffset>
+	<feComposite  in="shadowOffsetInner2" in2="SourceAlpha" k2="-1" k3="1" operator="arithmetic" result="shadowInnerInner2">
+		</feComposite>
+	
+		<feColorMatrix  in="shadowInnerInner2" result="shadowMatrixInner2" type="matrix" values="0 0 0 0 0.195860759   0 0 0 0 0.302745798   0 0 0 0 0.418789629  0 0 0 0.2 0">
+		</feColorMatrix>
+	<feGaussianBlur  in="SourceAlpha" result="shadowBlurInner3" stdDeviation="2"></feGaussianBlur>
+	<feOffset  dx="1" dy="1" in="shadowBlurInner3" result="shadowOffsetInner3"></feOffset>
+	<feComposite  in="shadowOffsetInner3" in2="SourceAlpha" k2="-1" k3="1" operator="arithmetic" result="shadowInnerInner3">
+		</feComposite>
+	
+		<feColorMatrix  in="shadowInnerInner3" result="shadowMatrixInner3" type="matrix" values="0 0 0 0 0.844759909   0 0 0 0 0.93453353   0 0 0 0 1  0 0 0 1 0">
+		</feColorMatrix>
+	<feMerge>
+		<feMergeNode  in="shadowMatrixInner1"></feMergeNode>
+		<feMergeNode  in="shadowMatrixInner2"></feMergeNode>
+		<feMergeNode  in="shadowMatrixInner3"></feMergeNode>
+	</feMerge>
+</filter>
+<g id="order_2">
+	<g id="编组" transform="translate(-12.000000, -12.000000)">
+		<rect id="矩形" class="st0" width="48" height="48"/>
+		<g id="排行榜_x2F_第一" transform="translate(12.000000, 12.000000)">
+			<g id="Group">
+				<g id="save">
+				</g>
+				<rect id="矩形_1_" class="st1" width="24" height="24"/>
+				<g id="Oval">
+					<g>
+						
+							<linearGradient id="path-2_2_" gradientUnits="userSpaceOnUse" x1="-21.4048" y1="47.9048" x2="-21.4048" y2="46.9048" gradientTransform="matrix(21 0 0 -21 461.5 1007.5)">
+							<stop  offset="0" style="stop-color:#D1D1D1"/>
+							<stop  offset="1" style="stop-color:#EBEBEB"/>
+						</linearGradient>
+						<circle id="path-2" class="st2" cx="12" cy="12" r="10.5"/>
+					</g>
+					<g class="st3">
+						<circle id="path-2_3_" cx="12" cy="12" r="10.5"/>
+					</g>
+				</g>
+			</g>
+			<path id="_x32_" class="st4" d="M15,17.4l0.5-2.5h-4.4l3.5-3.4c0.7-0.7,2.1-1.8,2.1-3.7c0-2.1-1.3-3.3-3.4-3.3
+				c-2.5,0-4.2,1.3-4.6,3.8h2.8c0.3-1,0.8-1.3,1.4-1.3c0.6,0,0.9,0.3,0.9,1c0,0.6-0.3,1-1,1.7l-5.3,5.2L7,17.4H15z"/>
+		</g>
+	</g>
+</g>
+</svg>

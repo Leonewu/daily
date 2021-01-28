@@ -1,0 +1,116 @@
+.preview {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  // width: calc(100% + 32px);
+  // height: calc(100% + 32px);
+
+  width: 1920px;
+  height: 1080px;
+  margin-top: -16px;
+  margin-left: -16px;
+  padding: 0 54px;
+  background-color: #ddd;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.left {
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: space-between;
+  height: 100%;
+  padding: 80px 0 30px;
+}
+.notice {
+  margin-top: 16px;
+  color: #fff;
+  font-size: 20px;
+  text-align: center;
+  opacity: 0.73;
+}
+.middle {
+  flex: 1;
+  height: 100%;
+  margin: 0 70px;
+  padding-top: 366px;
+  & > header {
+    margin-bottom: 18px;
+    color: rgba(255, 255, 255, 0.59);
+    font-size: 36px;
+    text-align: center;
+  }
+}
+.countdown {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: flex-end;
+  justify-content: center;
+  & > span {
+    display: block;
+    & + span {
+      margin-left: 18px;
+    }
+    &:nth-child(2n + 1) {
+      height: 106px;
+      color: #f00;
+      // mix-blend-mode: lighten;
+      font-weight: bold;
+      font-size: 84px;
+      line-height: 106px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 10px;
+    }
+    &:nth-child(2n) {
+      color: #fff;
+      font-size: 36px;
+    }
+  }
+}
+
+.showDay {
+  justify-content: flex-start;
+  & > span:nth-child(5) {
+    margin-left: auto;
+  }
+}
+
+.target {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  & > div {
+    text-align: center;
+    & > header {
+      margin-bottom: 20px;
+      color: #fff;
+      font-size: 36px;
+      opacity: 0.8;
+    }
+    & > span {
+      height: 106px;
+      padding: 0 36px;
+      color: #f00;
+      // mix-blend-mode: lighten;
+      font-weight: bold;
+      font-size: 84px;
+      line-height: 106px;
+      background: rgba(255, 255, 255);
+      border-radius: 10px;
+      opacity: 0.8;
+    }
+    &:first-child {
+      width: 100%;
+      margin-bottom: 63px;
+    }
+    &:nth-child(3) {
+      margin-left: auto;
+    }
+  }
+}
+
+.right {
+  display: flex;
+  height: 100%;
+  padding: 80px 0 36px;
+}

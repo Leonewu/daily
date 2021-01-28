@@ -1,0 +1,87 @@
+.carouselTable {
+  position: relative;
+  height: 100%;
+  padding: 12px 10px;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+}
+.headTable {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 4px;
+  & > thead > tr > th {
+    color: rgba(255, 255, 255);
+    font-weight: 400 !important;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.18);
+    opacity: 0.79;
+    &:first-child {
+      padding-left: 10px;
+    }
+  }
+}
+.mainTable {
+  width: 100%;
+  & > tbody > tr > td:first-child {
+    padding-left: 10px;
+  }
+  & > tbody {
+    color: #fff;
+    font-size: 20px;
+  }
+}
+.headTable,
+.mainTable {
+  table-layout: fixed;
+}
+.dots {
+  position: absolute;
+  right: 0;
+  bottom: -31px;
+  left: 0;
+  z-index: 15;
+  display: flex !important;
+  justify-content: center;
+  margin-right: 15%;
+  margin-left: 15%;
+  padding-left: 0;
+  list-style: none;
+  & > li {
+    position: relative;
+    display: inline-block;
+    flex: 0 1 auto;
+    box-sizing: content-box;
+    width: 16px;
+    height: 3px;
+    margin: 0 2px;
+    margin-right: 3px;
+    margin-left: 3px;
+    padding: 0;
+    text-align: center;
+    text-indent: -999px;
+    vertical-align: top;
+    transition: all 0.5s;
+    & > i {
+      display: block;
+      width: 100%;
+      height: 3px;
+      padding: 0;
+      color: transparent;
+      font-size: 0;
+      background: #fff;
+      border: 0;
+      border-radius: 1px;
+      outline: none;
+      cursor: pointer;
+      opacity: 0.3;
+      transition: all 0.5s;
+    }
+    &.active {
+      width: 24px;
+      & > i {
+        background: #fff;
+        opacity: 1;
+      }
+    }
+  }
+}

@@ -280,3 +280,10 @@ export const omitParams = <T extends {}>(params: T): T => {
   }, {});
   return omitedParams as T;
 };
+
+export function pad(num: string | number, n : number = 2): string {
+  while (num.toString().length < n) {
+    num = `0${num}`;
+  }
+  return num as string;
+}
