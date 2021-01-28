@@ -188,15 +188,36 @@ const substract = function (num1, num2) {
   return (Math.pow(10, scale) * num1 - Math.pow(10, scale) * num2) / Math.pow(10, Math.max(num1_scale, num2_scale))
 }
 
-const multiply = function (num1, num2) {
-  if (typeof num1 !== 'number' || typeof num2 !== 'number') return 0
-  num1 = num1.toString()
-  num2 = num2.toString()
-  const num1_scale = num1.split('.')[1] ? num1.split('.')[1].length : 0
-  const num2_scale = num2.split('.')[1] ? num2.split('.')[1].length : 0
-  return (Math.pow(10, num1_scale) * num1 * Math.pow(10, num2_scale) * num2) / Math.pow(10, num1_scale * num2_scale)
+// const multiply = function (num1, num2) {
+//   if (typeof num1 !== 'number' || typeof num2 !== 'number') return 0
+//   num1 = num1.toString()
+//   num2 = num2.toString()
+//   const num1_scale = num1.split('.')[1] ? num1.split('.')[1].length : 0
+//   const num2_scale = num2.split('.')[1] ? num2.split('.')[1].length : 0
+//   return (Math.pow(10, num1_scale) * num1 * Math.pow(10, num2_scale) * num2) / Math.pow(10, num1_scale * num2_scale)
 
-}
+// }
+
+/**
+ * @description 计算乘积
+ */
+export const multiply = (...args: number[]) => {
+  if (args.includes(0)) {
+    return 0;
+  }
+  let digits = 0;
+  const product = args.reduce((pre, cur) => {
+    if (cur.toString().includes('.')) {
+      const digit = cur.toString().length - cur.toString().indexOf('.') - 1;
+      pre *= Number((cur * 10 ** digit).toFixed(0));
+      digits += digit;
+    } else {
+      pre *= cur;
+    }
+    return pre;
+  }, 1);
+  return product / 10 ** digits;
+};
 
 const devide = function (num1, num2) {
   if (typeof num1 !== 'number' || typeof num2 !== 'number') return 0
@@ -226,3 +247,36 @@ const combine = function(left, n, right = [], res = []) {
   return res
 }
 combine([1, 2, 3, 4], 3)
+
+/**
+  A string hashing function based on Daniel J. Bernstein's popular 'times 33' hash algorithm.
+  @param {string} text - String to hash
+  @return {number} Resulting number.
+*/
+export function hash(text: string): number {
+  let res = 5381;
+  let index = text.length;
+  while (index) {
+    // eslint-disable-next-line no-plusplus
+    res = (res * 33) ^ text.charCodeAt(--index);
+  }
+  return res >>> 0;
+}
+
+/**
+ * 剔除不需要提交的参数
+ * omit useless params like <undefined | [] | null | ''>
+ */
+export const omitParams = <T extends {}>(params: T): T => {
+  const omitedParams = Object.keys(params).reduce((pre, key) => {
+    if (params[key] === undefined || params[key] === null || params[key] === '') {
+      return pre;
+    }
+    if (Array.isArray(params[key]) && !params[key].length) {
+      return pre;
+    }
+    pre[key] = params[key];
+    return pre;
+  }, {});
+  return omitedParams as T;
+};
