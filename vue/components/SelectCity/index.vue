@@ -73,7 +73,7 @@
       </section>
     </template>
     <template v-else>
-      <ul :class="$style.searchResult" ref="result" @scroll="onScroll">
+      <ul :class="$style.searchResult" ref="result" @scroll="onScroll" @touchstart="onTouchstart">
         <li 
           v-for="(item, index) in searchList"
           :key="index"
@@ -261,14 +261,26 @@ export default {
         this.districtList = []
       })
     },
+    onTouchstart() {
+      // IOS 在弹出键盘的时候，搜索完，键盘还没有收起
+      // 在没有收起的状态下，进行滚动，会很难滚动
+      // 因为 IOS 键盘弹出时，会有两个滚动条
+      // 一个是页面本身的滚动条，一个是列表内部的滚动条
+      // 处理方法：开始滚了就失焦
+      this.$refs.input.blur()
+    },
     onInput(e) {
+      // inputLock 输入中文时，首先会填充英文字母，空格之后才会显示中文
+      // 填充英文字母的过程中也会触发 input 事件
       if (this.inputLock) return
       this.onSearch(e.target.value)
     },
     onCompositionstart() {
+      // 输入中文开始
       this.inputLock = true
     },
     onCompositionend(e) {
+      // 输入中文结束
       this.inputLock = false
       this.onSearch(e.target.value)
     },
@@ -276,6 +288,8 @@ export default {
       this.showSearch = true
     },
     onBlur() {
+      // input 输入中，此时键盘弹出，输入完毕，滑动搜索结果列表或者点击 IOS 键盘上的完成按钮
+      // 这种情况下不需要隐藏搜索列表
       if (this.isIOSKeyboardPop) {
         return
       }
@@ -515,11 +529,6 @@ export default {
   display: flex;
   flex-direction: column;
   width: 100%;
-  // 这里在 IOS 会有个小问题
-  // 当列表长度超出， overflow 时
-  // 并且 IOS 键盘弹出时，会有两个滚动条
-  // 一个是页面本身的滚动条，一个是列表内部的滚动条
-  // 这时候体验会很差，内部滚动条基本拉不动，要 hover 1s 左右
   height: calc(100% - 1.17333333rem);
   max-height: calc(100% - 1.17333333rem);
   overflow-y: scroll;
