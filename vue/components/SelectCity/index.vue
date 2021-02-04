@@ -117,7 +117,7 @@ function throttle(fn, delay = 1000) {
   }
 }
 
-import { api_getSortLocation, api_searchLocation, api_getRecommendLocation } from 'api/location'
+import { api_getSortLocation, api_searchLocation, api_getRecommendLocation } from './api.js'
 import axios from 'axios'
 const isIOS = /i(Pad|Phone|Pod)/i.test(navigator.userAgent.toLowerCase())
 // const isAndroid = /android/i.test(navigator.userAgent.toLowerCase())
@@ -399,6 +399,7 @@ export default {
     }, 500)
   },
   created() {
+    document.querySelector('html').style.fontSize = '37.5px'
     this.getProvinceList()
     api_getRecommendLocation().then(res => {
       if (res.data) {
