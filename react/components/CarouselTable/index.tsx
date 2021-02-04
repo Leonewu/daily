@@ -66,7 +66,11 @@ const CarouselTable: React.FC<TablePropsType> = (props) => {
     // FIXME: 默认第二页时，手动点击第一页动画效果不流畅
     setTimeout(() => {
       setCurrent(page);
-      carouselRef.current?.goTo(page - 1);
+      if (current === totalPage && page === 1) {
+        carouselRef.current?.next();
+      } else {
+        carouselRef.current?.goTo(page - 1);
+      }
     }, 400);
   };
 
