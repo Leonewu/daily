@@ -52,7 +52,7 @@
         </template>
         <!-- 推荐 -->
         <template v-else-if="selectedProvince.code === 0">
-          <span :class="$style.tip">你的生源地可能为</span>
+          <span :class="$style.tip">你的所在城市可能为</span>
           <ul :class="$style.list">
             <li 
               :key="item.code"
@@ -122,7 +122,10 @@ import axios from 'axios'
 const isIOS = /i(Pad|Phone|Pod)/i.test(navigator.userAgent.toLowerCase())
 // const isAndroid = /android/i.test(navigator.userAgent.toLowerCase())
 
-/** 选择学员生源地 */
+/** 
+ * 移动端选择城市组件
+ * 远程搜索
+ */
 export default {
   data() {
     return {
@@ -132,7 +135,7 @@ export default {
       selectedProvince: {},
       selectedCity: {},
       selectedDistrict: {},
-      // 可能生源地
+      // 可能城市
       recommendCityList: [],
       showSearch: false,
       searchList: [],
@@ -153,7 +156,6 @@ export default {
         this.showSearch = false
         return
       }
-      this.$router.go(-1)
     },
     selectProvince(item) {
       if (item.code === this.selectedProvince.code) return
@@ -188,7 +190,6 @@ export default {
         district: this.selectedDistrict.code,
       }
       this.$emit('select', selected)
-      this.$router.go(-1)
     },
     onCityCancel() {
       this.selectedCity = {}
@@ -403,7 +404,7 @@ export default {
     this.getProvinceList()
     api_getRecommendLocation().then(res => {
       if (res.data) {
-        this.recommendCityList = (res.data.re_location || []).map(item => {
+        this.recommendCityList = (res.data || []).map(item => {
           if (item.province_code === item.city_code) {
             return {
               ...item, city_code: item.district_code, city: item.district 
@@ -411,7 +412,7 @@ export default {
           }
           return item
         })
-        if (res.data.re_location) {
+        if (res.data.length) {
           this.selectProvince({ code: 0 })
         }
       }
