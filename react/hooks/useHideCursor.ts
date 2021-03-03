@@ -87,12 +87,12 @@ export const useHideCursor = (
       node = (ref as React.MutableRefObject<HTMLElement>).current;
     }
     if (isHide) {
-      node.className += ' __hideCursor__';
+      node.classList.add('__hideCursor__');
     } else {
-      node.className = node.className.replace('__hideCursor__', '');
+      node.classList.remove('__hideCursor__');
     }
     return () => {
-      node.className = node.className.replace('__hideCursor__', '');
+      node.classList.remove('__hideCursor__');
     };
   }, [isHide]);
 
