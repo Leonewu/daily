@@ -18,3 +18,56 @@ function bubbleSort(arr) {
 计算次数为 n ^ 2 - n，这里减去 n 是因为每一轮都会减少 1 次，时间复杂度为 O(n)
 
 ## 归并排序
+
+归并排序的思路是，将数组分割成最小单元，将相邻的两个最小单元合并成有序子序列  
+即先分后合，排序的操作是在合并的时候进行的
+
+```js
+function merge(left, right) {
+  const result = [];
+  while(left.length && right.length) {
+    if (left[0] < right[0]) {
+      result.push(left.shift());
+    } else {
+      result.push(right.shift());
+    }
+  }
+  return result.concat(left, right);
+}
+
+function mergeSort(arr) {
+  if (arr.length === 1) return arr;
+  const middle = Math.floor(arr.length / 2);
+  const left = arr.slice(0, middle);
+  const right = arr.slice(middle);
+  return merge(mergeSort(left), mergeSort(right));
+}
+```
+
+时间复杂度为 O(nlgn)
+
+## 快速排序
+
+快排跟归并都是采用分治的思想，区别在于归并处理过程是由下到上，先处理子问题再合并；快排是由上到下，先排序再拆分子问题
+
+```js
+function quickSort(arr) {
+  if (arr.length <= 1) return arr;
+  const left = [];
+  const pivot = arr[0];
+  const middle = [pivot];
+  const right = [];
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] < pivot) {
+      left.push(arr[i]);
+    } else if (arr[i] > pivot) {
+      right.push(arr[i]);
+    } else {
+      middle.push(arr[i]);
+    }
+  }
+  return [...quickSort(left), ...middle, ...quickSort(right)];
+}
+```
+
+时间复杂度为 O(nlgn)
