@@ -1,4 +1,4 @@
-### 浏览器缓存
+# 浏览器缓存
 
 浏览器对静态资源发起请求的时候，会先检查强缓存（expires http1.0和cache-control http1.1），
 cache-control
@@ -14,6 +14,10 @@ max-age=xxx (xxx is numeric)：缓存内容将在xxx秒后失效
 
 ## 强缓存
 
+浏览器通过
+
 ## 协商缓存
 
 ## service worker
+
+## 缓存查询发生在哪一步
