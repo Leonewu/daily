@@ -2,6 +2,8 @@
 
 ## 历史
 
+模块化最开始由 script + IIFE 实现
+
 ## IIFE
 
 立即调用函数表达式（英文：immediately-invoked function expression，缩写：IIFE）  
@@ -10,9 +12,44 @@ IIFE 有自己的独立作用域，不会污染全局变量
 ### IIFE 怎么定义模块
 
 ```js
-// IIFE 示例
-// my-module-iife.js
-(function(window) {
+  // IIFE 示例
+  // my-module-iife.js
+  var myModule = (function() {
+    var x = 20;
+    function add() {
+      x++;
+      console.log(x);
+    }
+    return {
+      add
+    }
+  })();
+```
+
+或者
+
+```js
+  // IIFE 示例
+  // my-module-iife.js
+  (function(window) {
+    var x = 20;
+    const myModule = {
+      add() {
+        x++;
+        console.log(x);
+      }
+    }
+    window.myModule = myModule;
+  })(window);
+```
+
+上述代码将 window 对象作为参数传入立即执行函数，再将我们定义的对象挂载到 window 上，局部变量 x 被永久保存下来，并且无法被外部直接访问  
+使用时通过 `<script type="text/javascript" src="./my-module-iife.js"></script>` 引入  
+假设我们不用 IIFE，如下所示，x 变量是直接定义在全局的，会污染全局变量
+
+```js
+  // my-module.js
+  // 没有 local scope，不安全
   var x = 20;
   const myModule = {
     add() {
@@ -21,23 +58,6 @@ IIFE 有自己的独立作用域，不会污染全局变量
     }
   }
   window.myModule = myModule;
-})(window);
-```
-
-上述代码将 window 对象作为参数传入立即执行函数，再将我们定义的对象挂载到 window 上，局部变量 x 被永久保存下来，并且无法被外部直接访问  
-使用时通过 `<script type="text/javascript" src="./my-module-iife.js"></script>` 引入  
-假设我们不用 IIFE，如下所示，x 变量是直接定义在全局的，会污染全局变量
-
-```js
-// my-module.js
-var x = 20;
-const myModule = {
-  add() {
-    x++;
-    console.log(x);
-  }
-}
-window.myModule = myModule;
 ```
 
 ### 为 IIFE 添加依赖
@@ -47,38 +67,325 @@ window.myModule = myModule;
 ```html
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript">
-(function(window, $) {
-  var x = 20;
-  const myModule = {
-    add() {
+  var myModule = (function($) {
+    var x = 20;
+    function add() {
       x++;
       console.log(x);
       console.log($('body').width());
     }
-  }
-  window.myModule = myModule;
-})(window, window.jQuery);
+    return {
+      add
+    }
+  })(window.jQuery);
+  myModule.add();
 </script>
 <script type="text/javascript">
   myModule.add();
 </script>
 ```
 
-## amd
+### IIFE 小结
 
-异步模块定义（英文：Asynchronous Module Definition，缩写：amd）  
+到此为止，IIFE + script 已经能够实现模块的加载和依赖了，但是还存在以下缺点：
+
+1. 如果模块之间有依赖，引入时 script 标签的位置很重要，难以维护
+2. 每一个模块都用单独的 script 引入会增加 http 的请求
+3. 最终还是将对象挂载到 window 下
+以上两点，都可以通过一些办法去避免  
+YUI 是雅虎在 2006 年开源的一个 UI 框架，其中包含的 seed file 是一个模块加载器
+通过以下的方法创建和使用模块
+
+```js
+  YUI.add('my-module', function (Y) {
+    Y.MyModule = {
+      sayHello: function () {
+        console.log('Hello!');
+      }
+    };
+  });
+  YUI().use('my-module', function (Y) {
+    Y.MyModule.sayHello();
+  });
+```
+
+通过 `YUI.GlobalConfig` 管理依赖，通过 combase 合并多个依赖到同一个 http 请求中（前提是要服务器配合）
+
+```js
+  YUI.GlobalConfig = {
+    groups: {
+      utils: {
+        // specify whether or not this group has a combo service
+        combine: true,
+        // The comboSeperator to use with this group's combo handler
+        comboSep: ';',
+        // The maxURLLength for this server
+        maxURLLength: 500,
+        // the base path for non-combo paths
+        base: 'http://yui.yahooapis.com/2.8.0r4/build/',
+        // the path to the combo service
+        comboBase: 'http://yui.yahooapis.com/combo?',
+        // a fragment to prepend to the path attribute when
+        // when building combo urls
+        root: '2.8.0r4/build/',
+        // the module definitions
+        modules: {
+          module1: '/path/to/my/module1.js',
+          module2: '/path/to/my/module1.js',
+        }
+      }
+    }
+  };
+```
+
+类似的还有阿里的 KISSY，这里就不多做赘述
 
 ## commonJs
 
+commonJs 是 nodeJs 的模块化规范
+
+```js
+  // myModule.js
+  var name = 'myModule';
+  function getName() {
+    console.log(name);
+  }
+  module.exports = {
+    getName
+  }
+  // 或者
+  // exports.getName = getName;
+
+
+  // index.js
+  const myModule = require('myModule.js');
+  myModule.getName();
+```
+
+### 注意的细节
+
+1. require 是同步的
+2. 导出有三种方式 `module.export = { xxx }` 、`module.export.xxx = xxx` 、 `exports.xxx = xxx`，但不能直接对 exports 赋值，如 `exports = { xxx }`，因为 exports 只是一个指向 module.export 的私有变量，重新赋值是不会修改到 module.export 的
+
+3. 导出的是值传递或者引用类型，类似于函数传参
+
+## amd
+
+异步模块定义（英文：Asynchronous Module Definition，缩写：amd）  
+由于 commonJs 加载模块是同步的，如果按照其书写风格的话，在当年那个没有 webpack 的年代，并不适用于浏览器
+requireJs 是2011年开源的一个 amd 规范的模块加载器，通过函数包装的语法加载模块
+
+```js
+  // 定义一个模块 a.js
+  define(['utils.js'], function (utils){
+    var add = function(x,y) {
+      console.log(utils);
+      return x + y;
+    };
+    return {
+      add
+    };
+  });
+  // 在 b.js 中使用 a.js
+  require(['a.js'], function (a){
+    alert(a.add(1, 1));
+　});
+```
+
+## cmd
+
+cmd 是 seaJs 提出的模块概念，并没有成为规范  
+seaJs 是在 requireJs 的基础上更贴合 commonJs 的书写风格
+只要经过了 define 的包装，就可以像 nodeJs 一样书写代码
+
+```js
+  // 所有模块都通过 define 来定义
+  define(function(require, exports, module) {
+    // 通过 require 引入依赖
+    var $ = require('jquery');
+    var Spinning = require('./spinning');
+    // 通过 exports 对外提供接口
+    exports.doSomething = ...
+    // 或者通过 module.exports 提供整个接口
+    module.exports = ...
+  });
+```
+
+也兼容了 requireJs 的书写风格
+
+```js
+  define(['a', 'b'], function(a, b){
+    a.doSomething();
+    b.doSomething();
+  })
+```
+
 ## umd
+
+通用模块定义（英文：Universal Module Definition，缩写：umd）  
+从前文可以了解到，amd 规范用于浏览器，commonJs 用于 nodeJs，为了解决跨平台问题，于是便有两种规范的结合
+实现原理就是做一层 polyfill，根据环境使用的规范去导出
+
+```js
+  // if the module has no dependencies, the above pattern can be simplified to
+  (function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+      // AMD. Register as an anonymous module.
+      define([], factory);
+    } else if (typeof exports === 'object') {
+      // Node. Does not work with strict CommonJS, but
+      // only CommonJS-like environments that support module.exports,
+      // like Node.
+      module.exports = factory();
+    } else {
+      // Browser globals (root is window)
+      root.returnExports = factory();
+    }
+  }(this, function () {
+    // Just return a value to define the module export.
+    // This example returns an object, but the module
+    // can return a function as the exported value.
+    return {};
+  }));
+```
+
+## 插曲
+
+此时，随着 nodeJs 的流行，我们可以使用 nodeJs 做一些词法分析和代码转换  
+browsify 应运而生，我们在浏览器端也可以完全使用 commonJs 的书写风格
+
+```js
+var foo = require('lib/foo');
+module.export = { bar() {} };
+```
+
+`browsify lib/foo.js >> modules.js` 转换成
+
+```js
+require.define('lib/foo', function (require, module, exports) {
+   // actual code defined in lib/foo.js
+   module.exports = {
+      bar() {}
+   };
+});
+```
+
+之后，便有了 bebel，gulp，grunt，webpack，rollup 等一系列编译工具链，开启了前端工程化的时代
 
 ## esModule
 
+esModule 是 es6 中浏览器对模块化的原生支持
+
+```js
+// myModule.js
+export let counter = 1;
+export function add() {
+  counter++;
+}
+
+// index.js
+import * as myModule from './myModule.js';
+myModule.add();
+```
+
+### esModule 的导出
+
+使用 export 导出的变量都是强绑定
+
+```js
+// a.js
+export let counter = 1;
+export function add() {
+  counter++;
+  return counter;
+}
+
+// index.js
+import * as a from './a';
+console.log(a.counter); // 1
+console.log(a.add());   // 2
+console.log(a.counter); // 2
+```
+
+使用 export default 导出的变量不是强绑定（以下 export default 的写法不推荐使用）
+
+```js
+  // a.js
+  let counter = 1;
+  function add() {
+    counter++;
+    return counter;
+  }
+  export default {
+    counter,
+    add
+  }
+
+  // index.js
+  import a from './a.js';
+  console.log(a.counter); // 1
+  console.log(a.add());   // 2
+  console.log(a.counter); // 1
+```
+
+原因出在 export default 上
+
+```js
+  // 语法糖
+  // myFunc.js
+  function myFunc() {}
+  export default myFunc;
+  // main.js
+  import myFunc from './myFunc';
+
+  // 非语法糖
+  // myFunc.js
+  function myFunc() {}
+  export { myFunc as default };
+  // main.js
+  import { default as myFunc } from './myFunc';
+```
+
+所以，export default 是偏离 esm 标准的，对于 export default 的东西，我们要确保是没有强绑定的需求的  
+一般来说，单独的 class，单独的组件，单独的 function 导出用 export default ，如 `export default Button`，其他一律用 export，如 `export { a, b }`
+
+```js
+  // lib1.js
+  export default 1; // ok
+  // lib3.js
+  export default 1; // ok
+  // lib4.js
+  export default function name() {} // ok
+  // lib5.js
+  export default class name {}; // ok
+  // lib6.js
+  export default { a: 1, b: 2 } // not ok
+```
+
+### 注意的细节
+
+- esModule export 导出的是强绑定，而 export default 不是强绑定
+- import 和 export 只能用在 `type="module"` 的 script 标签中
+- 当执行到 import 语句时，浏览器会发起请求
+
 ## esModule 和 commonJs 的区别
 
-- 静态和动态
-- 编译器友好，容易 treeShaking
-- 强绑定
+- commonJs 是动态的，esModule 是静态的
+由于 commonJs 的 require 其实本质上就是个普通函数，module.export 本质上就是个对象。所以可以再任何地方执行 require，导出任何想导出的东西，如
+
+```js
+  const flag = Math.round(Math.random() * 100) % 2;
+  if (flag) {
+    module.export = require('./a.js');
+  } else {
+    module.export = require('./b.js');
+  }
+```
+
+而 esModule 是采用关键字的形式，import 只能放在顶层
+
+- esModule 的静态特性更有利于 treeShaking，对编译器友好
+- esModule export 导出变量是强绑定（简单类型和引用类型都会共享），export default 的是值的拷贝，commonJs 与函数传参类似，即引用类型会共享
 
 ## 拓展和思考
 
@@ -124,3 +431,5 @@ window.myModule = myModule;
 
 - [script-async-defer - javascript.info](https://zh.javascript.info/script-async-defer)
 - [async vs defer attributes - growingwiththeweb](https://www.growingwiththeweb.com/2014/02/async-vs-defer-attributes.html)
+- [javaScript 模块化七日谈](http://huangxuan.me/2015/07/09/js-module-7day/)
+- [深入解析ES Module（一）：禁用export default object](https://zhuanlan.zhihu.com/p/40733281)
