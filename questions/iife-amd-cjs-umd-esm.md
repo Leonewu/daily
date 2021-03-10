@@ -12,44 +12,26 @@ IIFE 有自己的独立作用域，不会污染全局变量
 ### IIFE 怎么定义模块
 
 ```js
-  // IIFE 示例
-  // my-module-iife.js
-  var myModule = (function() {
-    var x = 20;
-    function add() {
-      x++;
-      console.log(x);
-    }
-    return {
-      add
-    }
-  })();
+// IIFE 示例
+// my-module-iife.js
+var myModule = (() => {
+  var x = 20;
+  function add() {
+    x++;
+    console.log(x);
+  }
+  return {
+    add
+  }
+})();
 ```
 
 或者
 
 ```js
-  // IIFE 示例
-  // my-module-iife.js
-  (function(window) {
-    var x = 20;
-    const myModule = {
-      add() {
-        x++;
-        console.log(x);
-      }
-    }
-    window.myModule = myModule;
-  })(window);
-```
-
-上述代码将 window 对象作为参数传入立即执行函数，再将我们定义的对象挂载到 window 上，局部变量 x 被永久保存下来，并且无法被外部直接访问  
-使用时通过 `<script type="text/javascript" src="./my-module-iife.js"></script>` 引入  
-假设我们不用 IIFE，如下所示，x 变量是直接定义在全局的，会污染全局变量
-
-```js
-  // my-module.js
-  // 没有 local scope，不安全
+// IIFE 示例
+// my-module-iife.js
+((window) => {
   var x = 20;
   const myModule = {
     add() {
@@ -58,6 +40,24 @@ IIFE 有自己的独立作用域，不会污染全局变量
     }
   }
   window.myModule = myModule;
+})(window);
+```
+
+上述代码将 window 对象作为参数传入立即执行函数，再将我们定义的对象挂载到 window 上，局部变量 x 被永久保存下来，并且无法被外部直接访问  
+使用时通过 `<script type="text/javascript" src="./my-module-iife.js"></script>` 引入  
+假设我们不用 IIFE，只是单纯用 namespace 隔离，如下所示，x 变量是直接定义在全局的，会污染全局变量
+
+```js
+// my-module.js
+// 没有 local scope，不安全
+var x = 20;
+const myModule = {
+  add() {
+    x++;
+    console.log(x);
+  }
+}
+window.myModule = myModule;
 ```
 
 ### 为 IIFE 添加依赖
@@ -67,7 +67,7 @@ IIFE 有自己的独立作用域，不会污染全局变量
 ```html
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript">
-  var myModule = (function($) {
+  var myModule = (($) => {
     var x = 20;
     function add() {
       x++;
@@ -97,69 +97,67 @@ YUI 是雅虎在 2006 年开源的一个 UI 框架，其中包含的 seed file �
 通过以下的方法创建和使用模块
 
 ```js
-  YUI.add('my-module', function (Y) {
-    Y.MyModule = {
-      sayHello: function () {
-        console.log('Hello!');
-      }
-    };
-  });
-  YUI().use('my-module', function (Y) {
-    Y.MyModule.sayHello();
-  });
-```
-
-通过 `YUI.GlobalConfig` 管理依赖，通过 combase 合并多个依赖到同一个 http 请求中（前提是要服务器配合）
-
-```js
-  YUI.GlobalConfig = {
-    groups: {
-      utils: {
-        // specify whether or not this group has a combo service
-        combine: true,
-        // The comboSeperator to use with this group's combo handler
-        comboSep: ';',
-        // The maxURLLength for this server
-        maxURLLength: 500,
-        // the base path for non-combo paths
-        base: 'http://yui.yahooapis.com/2.8.0r4/build/',
-        // the path to the combo service
-        comboBase: 'http://yui.yahooapis.com/combo?',
-        // a fragment to prepend to the path attribute when
-        // when building combo urls
-        root: '2.8.0r4/build/',
-        // the module definitions
-        modules: {
-          module1: '/path/to/my/module1.js',
-          module2: '/path/to/my/module1.js',
-        }
-      }
+YUI.add('my-module', function (Y) {
+  Y.MyModule = {
+    sayHello() {
+      console.log('Hello!');
     }
   };
+});
+YUI().use('my-module', function (Y) {
+  Y.MyModule.sayHello();
+});
 ```
 
-类似的还有阿里的 KISSY，这里就不多做赘述
+通过 `YUI.GlobalConfig` 管理依赖，通过 comboBase 合并多个依赖到同一个 http 请求中（前提是要服务器配合），大致配置如下
+
+```js
+YUI.GlobalConfig = {
+  groups: {
+    utils: {
+      // specify whether or not this group has a combo service
+      combine: true,
+      // The comboSeperator to use with this group's combo handler
+      comboSep: ';',
+      // The maxURLLength for this server
+      maxURLLength: 500,
+      // the base path for non-combo paths
+      base: 'http://yui.yahooapis.com/2.8.0r4/build/',
+      // the path to the combo service
+      comboBase: 'http://yui.yahooapis.com/combo?',
+      // a fragment to prepend to the path attribute when
+      // when building combo urls
+      root: '2.8.0r4/build/',
+      // the module definitions
+      modules: {
+        module1: '/path/to/my/module1.js',
+        module2: '/path/to/my/module1.js',
+      }
+    }
+  }
+};
+```
 
 ## commonJs
 
 commonJs 是 nodeJs 的模块化规范
 
 ```js
-  // myModule.js
-  var name = 'myModule';
-  function getName() {
-    console.log(name);
-  }
-  module.exports = {
-    getName
-  }
-  // 或者
-  // exports.getName = getName;
+// myModule.js
+var name = 'myModule';
+function getName() {
+  console.log(name);
+}
+module.exports = {
+  getName
+}
+// 或者
+// exports.getName = getName;
 
 
-  // index.js
-  const myModule = require('myModule.js');
-  myModule.getName();
+// index.js
+const myModule = require('myModule.js');
+myModule.getName();
 ```
 
 ### 注意的细节
@@ -176,20 +174,20 @@ commonJs 是 nodeJs 的模块化规范
 requireJs 是2011年开源的一个 amd 规范的模块加载器，通过函数包装的语法加载模块
 
 ```js
-  // 定义一个模块 a.js
-  define(['utils.js'], function (utils){
-    var add = function(x,y) {
-      console.log(utils);
-      return x + y;
-    };
-    return {
-      add
-    };
-  });
-  // 在 b.js 中使用 a.js
-  require(['a.js'], function (a){
-    alert(a.add(1, 1));
-　});
+// 定义一个模块 a.js
+define(['utils.js'], function(utils) {
+  var add = function(x,y) {
+    console.log(utils);
+    return x + y;
+  };
+  return {
+    add
+  };
+});
+// 在 b.js 中使用 a.js
+require(['a.js'], function(a) {
+  alert(a.add(1, 1));
+});
 ```
 
 ## cmd
@@ -199,25 +197,25 @@ seaJs 是在 requireJs 的基础上更贴合 commonJs 的书写风格
 只要经过了 define 的包装，就可以像 nodeJs 一样书写代码
 
 ```js
-  // 所有模块都通过 define 来定义
-  define(function(require, exports, module) {
-    // 通过 require 引入依赖
-    var $ = require('jquery');
-    var Spinning = require('./spinning');
-    // 通过 exports 对外提供接口
-    exports.doSomething = ...
-    // 或者通过 module.exports 提供整个接口
-    module.exports = ...
-  });
+// 所有模块都通过 define 来定义
+define(function(require, exports, module) {
+  // 通过 require 引入依赖
+  var $ = require('jquery');
+  var Spinning = require('./spinning');
+  // 通过 exports 对外提供接口
+  exports.doSomething = ...
+  // 或者通过 module.exports 提供整个接口
+  module.exports = ...
+});
 ```
 
 也兼容了 requireJs 的书写风格
 
 ```js
-  define(['a', 'b'], function(a, b){
-    a.doSomething();
-    b.doSomething();
-  })
+define(['a', 'b'], function(a, b){
+  a.doSomething();
+  b.doSomething();
+})
 ```
 
 ## umd
@@ -227,26 +225,26 @@ seaJs 是在 requireJs 的基础上更贴合 commonJs 的书写风格
 实现原理就是做一层 polyfill，根据环境使用的规范去导出
 
 ```js
-  // if the module has no dependencies, the above pattern can be simplified to
-  (function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-      // AMD. Register as an anonymous module.
-      define([], factory);
-    } else if (typeof exports === 'object') {
-      // Node. Does not work with strict CommonJS, but
-      // only CommonJS-like environments that support module.exports,
-      // like Node.
-      module.exports = factory();
-    } else {
-      // Browser globals (root is window)
-      root.returnExports = factory();
-    }
-  }(this, function () {
-    // Just return a value to define the module export.
-    // This example returns an object, but the module
-    // can return a function as the exported value.
-    return {};
-  }));
+// if the module has no dependencies, the above pattern can be simplified to
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module.
+    define([], factory);
+  } else if (typeof exports === 'object') {
+    // Node. Does not work with strict CommonJS, but
+    // only CommonJS-like environments that support module.exports,
+    // like Node.
+    module.exports = factory();
+  } else {
+    // Browser globals (root is window)
+    root.returnExports = factory();
+  }
+}(this, function () {
+  // Just return a value to define the module export.
+  // This example returns an object, but the module
+  // can return a function as the exported value.
+  return {};
+}));
 ```
 
 ## 插曲
@@ -310,56 +308,56 @@ console.log(a.counter); // 2
 使用 export default 导出的变量不是强绑定（以下 export default 的写法不推荐使用）
 
 ```js
-  // a.js
-  let counter = 1;
-  function add() {
-    counter++;
-    return counter;
-  }
-  export default {
-    counter,
-    add
-  }
+// a.js
+let counter = 1;
+function add() {
+  counter++;
+  return counter;
+}
+export default {
+  counter,
+  add
+}
 
-  // index.js
-  import a from './a.js';
-  console.log(a.counter); // 1
-  console.log(a.add());   // 2
-  console.log(a.counter); // 1
+// index.js
+import a from './a.js';
+console.log(a.counter); // 1
+console.log(a.add());   // 2
+console.log(a.counter); // 1
 ```
 
 原因出在 export default 上
 
 ```js
-  // 语法糖
-  // myFunc.js
-  function myFunc() {}
-  export default myFunc;
-  // main.js
-  import myFunc from './myFunc';
+// 语法糖
+// myFunc.js
+function myFunc() {}
+export default myFunc;
+// main.js
+import myFunc from './myFunc';
 
-  // 非语法糖
-  // myFunc.js
-  function myFunc() {}
-  export { myFunc as default };
-  // main.js
-  import { default as myFunc } from './myFunc';
+// 非语法糖
+// myFunc.js
+function myFunc() {}
+export { myFunc as default };
+// main.js
+import { default as myFunc } from './myFunc';
 ```
 
 所以，export default 是偏离 esm 标准的，对于 export default 的东西，我们要确保是没有强绑定的需求的  
 一般来说，单独的 class，单独的组件，单独的 function 导出用 export default ，如 `export default Button`，其他一律用 export，如 `export { a, b }`
 
 ```js
-  // lib1.js
-  export default 1; // ok
-  // lib3.js
-  export default 1; // ok
-  // lib4.js
-  export default function name() {} // ok
-  // lib5.js
-  export default class name {}; // ok
-  // lib6.js
-  export default { a: 1, b: 2 } // not ok
+// lib1.js
+export default 1; // ok
+// lib3.js
+export default 1; // ok
+// lib4.js
+export default function name() {} // ok
+// lib5.js
+export default class name {}; // ok
+// lib6.js
+export default { a: 1, b: 2 } // not ok
 ```
 
 ### 注意的细节
@@ -374,12 +372,12 @@ console.log(a.counter); // 2
 由于 commonJs 的 require 其实本质上就是个普通函数，module.export 本质上就是个对象。所以可以再任何地方执行 require，导出任何想导出的东西，如
 
 ```js
-  const flag = Math.round(Math.random() * 100) % 2;
-  if (flag) {
-    module.export = require('./a.js');
-  } else {
-    module.export = require('./b.js');
-  }
+const flag = Math.round(Math.random() * 100) % 2;
+if (flag) {
+  module.export = require('./a.js');
+} else {
+  module.export = require('./b.js');
+}
 ```
 
 而 esModule 是采用关键字的形式，import 只能放在顶层
@@ -389,9 +387,13 @@ console.log(a.counter); // 2
 
 ## 拓展和思考
 
+### esModule 与 commonJs 的相互引用
+
 ### 编译器的 treeShaking
 
 ### npm package 打包规范
+
+### 普通 script 和 type="module" script 的区别
 
 ### script 标签的 async 和 defer 属性
 
