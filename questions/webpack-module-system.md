@@ -2,7 +2,7 @@
 
 webpack 模块系统是自己实现的，模块经过打包后将导出的变量放在 exports 中给外部访问  
 webpack 模块定义是比较贴近于 commonJS 规范的，原因大概能猜到，commonJs 规范并不是采用关键字的语法，可以通过函数实现，这样有利于 webpack 做模块缓存，并且兼容两种规范(esModule 和 commonJs)时可以基本不对 commonJs 模块做处理  
-这篇文章主要讨论 webpack 对不同规范模块的处理，以下例子均采用 webpack 5 打包，相关代码在 [这里](https://github1s.com/Leonewu/daily/blob/HEAD/webpack/esmodule-commonjs-bundle) 可以看到
+这篇文章主要讨论 webpack 对不同规范模块的处理，以下代码示例均采用 webpack 5 打包，相关代码在 [这里](https://github1s.com/Leonewu/daily/blob/HEAD/webpack/esmodule-commonjs-bundle/README.md) 可以看到
 
 ## webpack runtime 关键代码
 
@@ -61,7 +61,7 @@ var __webpack_modules__ = ({
 
 ### 函数 `__webpack_require__.d`
 
-`__webpack_require__.d` 是对模块导出变量 exports 设置代理的函数。例如 `export { a: 1, b: 2 }` 中的 `{ a: 1, b: 2 }`，都会经过这个函数，将导出的对象都搬到 exports 中去，通过 `Object.defineProperty` 实现
+`__webpack_require__.d` 是对模块导出变量 exports 设置代理的函数。例如 `export { a: 1, b: 2 }` 中的 `{ a: 1, b: 2 }`，都会经过这个函数，将导出的对象都搬到 exports 中去，原理是 `Object.defineProperty`
 
 ```js
 /******/  // define getter functions for harmony exports
@@ -91,16 +91,7 @@ var __webpack_modules__ = ({
 
 ### 函数 `__webpack_require__.n`
 
-`__webpack_require__.n` 是引入模块时可能会调用的函数，以下几种引用情况都会调用该函数
-
-- 使用 import 引入 commonJs 模块，无论是否默认导入
-- 使用 import 默认导入没有默认导出的模块，即 `import module1 from 'module1.js'` 并且 module1 中没有默认导出
-
-另外，下面的情况会报错
-
-- 使用 require 引入只有默认导出的 esModule 模块
-
-这种情况 webpack 是不会调用 `__webpack_require__.n` 的，此时导出的变量实际上在 `export.default` 上，没有调用 `__webpack_require__.n` 会导致拿不到变量
+`__webpack_require__.n` 是引入模块时可能会调用的函数，是对 esModule 默认引入的处理
 
 ```js
 // getDefaultExport function for compatibility with non-harmony modules
@@ -113,7 +104,18 @@ var __webpack_modules__ = ({
 /******/   };
 ```
 
-## 对 esModule 和 commonJs 模块的处理
+以下几种情况会调用该函数
+
+- 使用 import 引入 commonJs 模块，无论是否默认导入
+- 使用 import 默认导入没有默认导出的模块，即 `import module1 from 'module1.js'` 并且 module1 中没有默认导出
+
+另外，下面的情况会报错
+
+- 使用 require 引入只有默认导出的 esModule 模块
+
+这种情况 webpack 是不会调用 `__webpack_require__.n` 的，但其实导出的变量实际上在 `export.default` 上，没有调用 `__webpack_require__.n` 会导致拿不到变量
+
+## webpack 对 esModule 和 commonJs 模块的处理
 
 对于 commonJs 规范的，webpack 基本不做处理，直接将代码搬运过来
 
@@ -179,14 +181,14 @@ function log() {
 })
 ```
 
-## 对 esModule 的导出差异的处理
+## webpack 对 esModule 的导出差异的处理
 
 esModule 导出有两种，一种是直接 export，另一种是默认导出 export default，乍看之下只是语法上的区别，但其实不然
 
 ### export default 和 export 的差异
 
 export default 和 export 导出的表现不一样，这种差异如下  
-示例一：ems-without-default.js 使用 export 导出
+示例一：esm-without-default.js 使用 export 导出
 
 ```js
 export let counter = 1;
@@ -196,7 +198,7 @@ export function add() {
 }
 ```
 
-示例二：ems-with-default.js 使用 export default 导出
+示例二：esm-with-default.js 使用 export default 导出
 
 ```js
 let counter = 1;
@@ -229,10 +231,11 @@ console.log(esmWithoutDefault.counter);   // 1
 
 可以看出 export default 导出的变量并不是强绑定，即类似函数传参的形式
 
-### webpack 是如何处理的
-
 那 webpack 是如何处理这种差异呢？我们看看下面的代码  
-示例一：ems-without-default.js 编译后的代码
+
+### webpack 对 esModule 普通导出的处理
+
+示例一：esm-without-default.js 编译后的代码
 
 ```js
 /***/ "./src/compare-export-default/esm-without-default.js":
@@ -255,8 +258,11 @@ function add() {
 /***/ })
 ```
 
-对于 export 的变量，是直接挂载在 exports 中的，调用 add 方法，改变了局部变量 counter，读取时通过代理找到了该局部变量，所以是强绑定  
-示例二：ems-with-default.js 编译后的代码
+对于 export 的变量，是直接挂载在 exports 中的，调用 add 方法，改变了局部变量 counter，读取时通过代理找到了该局部变量，所以是强绑定
+
+### webpack 对 esModule 默认导出的处理
+
+示例二：esm-with-default.js 编译后的代码
 
 ```js
 /***/ "./src/compare-export-default/esm-with-default.js":
@@ -284,7 +290,7 @@ function add() {
 
 可以看到，对于 export default，将导出的变量放在局部变量 `__WEBPACK_DEFAULT_EXPORT__` 中，并代理了 `exports.default` 这个中间变量，从代码上很明显看出，调用 add 方法并不是直接改变 `__WEBPACK_DEFAULT_EXPORT__.counter`，而是改变了局部变量 counter，由于是简单类型，这两者并不是指向同一内存区域
 
-### esModule 的默认导入
+## webpack 对 esModule 默认导入的处理
 
 esModule 引入模块有两种形式
 
@@ -298,7 +304,7 @@ import * as a from 'a';
 a.log();
 ```
 
-默认导入，webpack 读取的是 `exports.default` 变量
+默认导入，webpack 通过上文提到的 `__webpack_require__.n` 读取 `exports.default` 变量
 
 ```js
 import a from 'a';
@@ -327,3 +333,49 @@ esmDefaultImport.log(); // 2
 ```
 
 另外，如果默认导入一个没有默认导出的模块，会报错
+
+## 拓展
+
+export default 在过去其实是有坑的，因为可能会跟对象解构的语法冲突
+
+```js
+// esm.js
+export default {
+  log() {
+    console.log(2);
+  }
+}
+
+// index.js 引入时解构
+import { log } from './esm';
+log();
+```
+
+这种情况可以有两种理解
+
+1. 单纯只是引入普通导入，不会解构
+2. 在引入的时候结构了默认引入，即
+
+```js
+import esm from './esm'
+const { log } = esm;
+log();
+```
+
+按照 esModule 的标准，结果应该是 1，调用 log 会报错，但是用 babel5 却能正确输出  
+不过，在实际测试中，webpack 5中这样使用也会报错  
+鉴于历史，我们还是要注意一下规范编码
+
+## 总结
+
+了解 webpack 的模块系统，对我们平时的编码习惯也有所启发，使用 esModule 时，也要注意以下几点
+
+- 不要在一个模块同时使用普通导出和默认导出
+- 默认导出和默认导入，普通导入和普通导入，两者要一一对应
+- 如果一个文件有多个导出时，使用普通导出，如函数库
+- 如果一个文件只有单个导出时，可以使用默认导出，如 class，组件
+- esModule 默认导出不是强绑定，这个和 commonJs 是一样的，普通导出则是强绑定
+
+## 参考
+
+- [禁用export default object - 知乎](https://zhuanlan.zhihu.com/p/40733281)
