@@ -2,7 +2,7 @@
 
 webpack 模块系统是自己实现的，模块经过打包后将导出的变量放在 exports 中给外部访问  
 webpack 模块定义是比较贴近于 commonJS 规范的，原因大概能猜到，commonJs 规范并不是采用关键字的语法，可以通过函数实现，这样有利于 webpack 做模块缓存，并且兼容两种规范(esModule 和 commonJs)时可以基本不对 commonJs 模块做处理  
-这篇文章主要讨论 webpack 对不同规范模块的处理，以下代码示例均采用 webpack 5 打包，相关代码在 [这里](https://github1s.com/Leonewu/daily/blob/HEAD/webpack/esmodule-commonjs-bundle/README.md) 可以看到
+这篇文章主要讨论 webpack 对不同规范模块的处理，以下代码示例均采用 webpack 5 打包，相关代码在 [这里](https://github.com/Leonewu/daily/tree/fdeeb00136851a0f97f1c391c7bb9fd79f696775/webpack/esmodule-commonjs-bundle) 可以看到
 
 ## webpack runtime 关键代码
 
@@ -335,6 +335,12 @@ esmDefaultImport.log(); // 2
 另外，如果默认导入一个没有默认导出的模块，会报错
 
 ## 拓展
+
+## 为什么有时候 import xxx from 'xxx' 会报错
+
+这种情况只会出现在只打包出 commonJs 规范的包中。对于 commonJs 的包，webpack 是不会去包装 default 和 _esModule 变量的。此时默认引入，webpack 会读取 `exports.default` 变量，为 undefined，所以报错了，需要使用 `import * as xxx from 'xxx'`
+
+## export default 的问题
 
 export default 在过去其实是有坑的，因为可能会跟对象解构的语法冲突
 

@@ -261,18 +261,20 @@ module.export = { bar() {} };
 
 ```js
 require.define('lib/foo', function (require, module, exports) {
-   // actual code defined in lib/foo.js
-   module.exports = {
-      bar() {}
-   };
+  // actual code defined in lib/foo.js
+  module.exports = {
+    bar() {}
+  };
 });
 ```
 
-之后，便有了 bebel，gulp，grunt，webpack，rollup 等一系列编译工具链，开启了前端工程化的时代
+之后，便有了 bebel，gulp，grunt，webpack，rollup 一系列编译工具链，开启了前端工程化的时代
 
 ## esModule
 
-esModule 是 es6 中浏览器对模块化的原生支持
+esModule 是 es6 中浏览器对模块化的原生支持，只能用于 `<script type="module"></script> 中并且，浏览器执行到 import 语句时会发起一个请求  
+当然 webpack 中能用是因为做了兼容处理转成了 es5
+esModule 的部分语法如下
 
 ```js
 // myModule.js
@@ -288,6 +290,7 @@ myModule.add();
 
 ### esModule 的导出
 
+需要注意的是 esModule 默认导出和普通导出是有表现差异的  
 使用 export 导出的变量都是强绑定
 
 ```js
@@ -305,7 +308,7 @@ console.log(a.add());   // 2
 console.log(a.counter); // 2
 ```
 
-使用 export default 导出的变量不是强绑定（以下 export default 的写法不推荐使用）
+使用 export default 导出的变量类似于函数传参的效果，简单类型不会共享，复杂类型会共享
 
 ```js
 // a.js
@@ -326,46 +329,6 @@ console.log(a.add());   // 2
 console.log(a.counter); // 1
 ```
 
-原因出在 export default 上
-
-```js
-// 语法糖
-// myFunc.js
-function myFunc() {}
-export default myFunc;
-// main.js
-import myFunc from './myFunc';
-
-// 非语法糖
-// myFunc.js
-function myFunc() {}
-export { myFunc as default };
-// main.js
-import { default as myFunc } from './myFunc';
-```
-
-所以，export default 是偏离 esm 标准的，对于 export default 的东西，我们要确保是没有强绑定的需求的  
-一般来说，单独的 class，单独的组件，单独的 function 导出用 export default ，如 `export default Button`，其他一律用 export，如 `export { a, b }`
-
-```js
-// lib1.js
-export default 1; // ok
-// lib3.js
-export default 1; // ok
-// lib4.js
-export default function name() {} // ok
-// lib5.js
-export default class name {}; // ok
-// lib6.js
-export default { a: 1, b: 2 } // not ok
-```
-
-### 注意的细节
-
-- esModule export 导出的是强绑定，而 export default 不是强绑定
-- import 和 export 只能用在 `type="module"` 的 script 标签中
-- 当执行到 import 语句时，浏览器会发起请求
-
 ## esModule 和 commonJs 的区别
 
 - commonJs 是动态的，esModule 是静态的
@@ -383,7 +346,7 @@ if (flag) {
 而 esModule 是采用关键字的形式，import 只能放在顶层
 
 - esModule 的静态特性更有利于 treeShaking，对编译器友好
-- esModule export 导出变量是强绑定（简单类型和引用类型都会共享），export default 的是值的拷贝，commonJs 与函数传参类似，即引用类型会共享
+- esModule export 导出变量是强绑定（简单类型和引用类型都会共享），export default 的是值的拷贝，和 commonJs 一样，类似于函数传参
 
 ## 拓展和思考
 

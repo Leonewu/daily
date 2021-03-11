@@ -15,3 +15,4 @@ dist 为编译目录
 - compare-export-default：比较 esModule 的普通导出和默认导出的打包编译  
 - exm-and-cjs：比较 esModule + commonJs 的打包编译  
 - esm-import-cjs：使用 esModule 的语法引入 commonJs 模块后的打包编译
+- destruct-when-import-default：在 esModule 默认引入的时候解构
