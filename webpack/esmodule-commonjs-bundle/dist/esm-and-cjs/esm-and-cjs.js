@@ -1,12 +1,11 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./src/cjs.js":
-/*!********************!*\
-  !*** ./src/cjs.js ***!
-  \********************/
+/***/ "./src/esm-and-cjs/cjs.js":
+/*!********************************!*\
+  !*** ./src/esm-and-cjs/cjs.js ***!
+  \********************************/
 /***/ ((module) => {
-
 
 const name = 'cjs';
 module.exports = {
@@ -17,10 +16,10 @@ module.exports = {
 
 /***/ }),
 
-/***/ "./src/esm.js":
-/*!********************!*\
-  !*** ./src/esm.js ***!
-  \********************/
+/***/ "./src/esm-and-cjs/esm.js":
+/*!********************************!*\
+  !*** ./src/esm-and-cjs/esm.js ***!
+  \********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -29,14 +28,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "name": () => (/* binding */ name),
 /* harmony export */   "log": () => (/* binding */ log)
 /* harmony export */ });
-const name = 'exm';
+const name = 'esm';
 function log() {
   console.log(name);
 }
-function logDefault() {
-  console.log('default');
-}
-// export default logDefault;
 
 /***/ })
 
@@ -99,19 +94,16 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be in strict mode.
 (() => {
 "use strict";
-/*!**********************!*\
-  !*** ./src/index.js ***!
-  \**********************/
+/*!**********************************!*\
+  !*** ./src/esm-and-cjs/index.js ***!
+  \**********************************/
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _esm_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./esm.js */ "./src/esm.js");
+/* harmony import */ var _esm_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./esm.js */ "./src/esm-and-cjs/esm.js");
 
-
-// log();logDefault();
-
-const cjs = __webpack_require__(/*! ./cjs.js */ "./src/cjs.js");
+const cjs = __webpack_require__(/*! ./cjs.js */ "./src/esm-and-cjs/cjs.js");
 
 cjs.log();
-_esm_js__WEBPACK_IMPORTED_MODULE_0__.default.log();
+_esm_js__WEBPACK_IMPORTED_MODULE_0__.log();
 })();
 
 /******/ })()

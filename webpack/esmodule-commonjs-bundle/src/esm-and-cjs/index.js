@@ -1,7 +1,4 @@
-import esm from './esm.js'
-
-// log();logDefault();
-
+import * as esm from './esm.js';
 const cjs = require('./cjs.js');
 
 cjs.log();

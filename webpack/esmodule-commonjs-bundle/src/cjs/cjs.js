@@ -1,4 +1,3 @@
-
 const name = 'cjs';
 module.exports = {
   log() {
