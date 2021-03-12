@@ -1,13 +1,9 @@
 # 前端模块化
 
-## 历史
-
-模块化最开始由 script + IIFE 实现
-
 ## IIFE
 
 立即调用函数表达式（英文：immediately-invoked function expression，缩写：IIFE）  
-IIFE 有自己的独立作用域，不会污染全局变量
+IIFE 有自己的独立作用域，不会污染全局变量。IIFE 是模块化的雏形
 
 ### IIFE 怎么定义模块
 
@@ -272,7 +268,7 @@ require.define('lib/foo', function (require, module, exports) {
 
 ## esModule
 
-esModule 是 es6 中浏览器对模块化的原生支持，只能用于 `<script type="module"></script> 中并且，浏览器执行到 import 语句时会发起一个请求  
+esModule 是 es6 中浏览器对模块化的原生支持，只能用于 `<script type="module"></script> 中并且，浏览器执行到 import 语句时会发起一个请求。esModule 带出的变量都是只读的，不能在外部修改  
 当然 webpack 中能用是因为做了兼容处理转成了 es5
 esModule 的部分语法如下
 
@@ -345,18 +341,55 @@ if (flag) {
 
 而 esModule 是采用关键字的形式，import 只能放在顶层
 
-- esModule 的静态特性更有利于 treeShaking，对编译器友好
+- esModule 的静态特性更有利于 tree shaking，对编译器友好
 - esModule export 导出变量是强绑定（简单类型和引用类型都会共享），export default 的是值的拷贝，和 commonJs 一样，类似于函数传参
 
 ## 拓展和思考
 
-### esModule 与 commonJs 的相互引用
+### tree shaking
 
-### 编译器的 treeShaking
+tree shaking 是指在代码引入/定义后没有使用到的情况下，会将代码删除
+commonJs 规范太过灵活，不适合做 tree shaking，esModule 是静态引入，容易做 tree shaking
+对第三方 npm 包 tree shaking 的前提是 npm 包有 esModule 规范的 es5 语法的入口
+
+#### 如何写出 tree shaking 友好的代码
+
+tree shaking 需要 npm 模块的支持，以 webpack 为例，要注意 pkg.module 和 pkg.sideEffects 字段
+我们平时编写可能需要 tree shaking 的模块时，使用 export 而不是 export default
+但不是完全不用 export default，如果模块只有单个导出，如配置项，组件，class，这时候可以使用 export default  
+引入时，`import * as xxx from 'xxx'` 或者 `import { add } from 'xxx'`
+在编写 npm 包时，要注意打包出基于 es6 模块语法，使用 es5 语法编写的目录，并且配置 pkg.module，在 pkg.sideEffects 字段
+指出有副作用的代码（引入没用到也不要删掉的代码）
 
 ### npm package 打包规范
 
+一个 npm 包一般需要打出 esModule 和 commonJs 规范  
+其实打包出 commonJs 就已经够用了，在 node 端和浏览器端都可以正常引入  
+但考虑到 tree shaking，才会打包出 esModule 规范的，
+
+#### package.json 相关的字段
+
+- files：下载该 npm 包时包含的文件夹
+- main：引入该 npm 包时的入口文件，一般都是 commonJs 规范的入口文件
+- brower：浏览器环境下，如 webpack 配置 target 时引入该 npm 包时的入口文件
+- module：该字段还未成为 npm 规范。webpack，rollup 为 tree shaking 指定的基于 ES6 模块规范的使用 ES5 语法书写的入口文件
+- sideEffects：该字段还未成为 npm 规范，是 webpack 4 新增的特性。表示告诉 webpack，在开启了 tree shaking 后，该配置项包含的模块，即使引入了没有被使用，也不要把它给删掉。一般会把样式文件放进去，或者是某些 polyfill 功能的代码。
+
+```js
+ "sideEffects": [
+    "es/**/style/*",
+    "lib/**/style/*",
+    "*.css",
+    "*.less"
+  ],
+```
+
+优先级：main 优先级最低，brower 和 module 跟进具体环境的配置来  
+在 webpack 中，如果配置了 `target: 'web'`，优先级为 'browser' > 'module' > 'main'，也可手动配置 `resolve.mainFields`，具体可以查看 [webpack-resolve](https://webpack.docschina.org/configuration/resolve/)
+
 ### 普通 script 和 type="module" script 的区别
+
+`<script type="module"></script>` 默认是 defer？
 
 ### script 标签的 async 和 defer 属性
 
@@ -389,8 +422,6 @@ if (flag) {
 - 如果脚本比较小并且被另一个 async 脚本依赖，使用不带 async 和 defer 属性的 script 标签，并且放在该 async 脚本前面
 
 [![async vs defer attributes](./script-defer-async.png)](https://www.growingwiththeweb.com/2014/02/async-vs-defer-attributes.html)
-
-### 为什么有些库需要这样引入 import * as _ from 'lodash'
 
 ## 参考
 
