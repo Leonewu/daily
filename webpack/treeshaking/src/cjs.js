@@ -1,11 +1,11 @@
 const test1 = function() {
-  console.log('esm-export-test1');
+  console.log('cjs-test1');
   if (min >= max) return false
   return min + Math.floor(Math.random() * (max - min))
 }
 
 const test2 = function() {
-  console.log('esm-export-test2');
+  console.log('cjs-test2');
   if (min >= max) return false
   return min + Math.floor(Math.random() * (max - min))
 }
