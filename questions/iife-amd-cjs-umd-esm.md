@@ -3,7 +3,7 @@
 ## IIFE
 
 立即调用函数表达式（英文：immediately-invoked function expression，缩写：IIFE）  
-IIFE 有自己的独立作用域，不会污染全局变量。IIFE 是模块化的雏形
+IIFE 有自己的独立作用域，不会污染全局变量。IIFE 是模块化的雏形。
 
 ### IIFE 怎么定义模块
 
@@ -41,7 +41,7 @@ var myModule = (() => {
 
 上述代码将 window 对象作为参数传入立即执行函数，再将我们定义的对象挂载到 window 上，局部变量 x 被永久保存下来，并且无法被外部直接访问  
 使用时通过 `<script type="text/javascript" src="./my-module-iife.js"></script>` 引入  
-假设我们不用 IIFE，只是单纯用 namespace 隔离，如下所示，x 变量是直接定义在全局的，会污染全局变量
+假设我们不用 IIFE，只是单纯用 namespace 隔离，如下所示，x 变量是直接定义在全局的，会污染全局变量。
 
 ```js
 // my-module.js
@@ -166,7 +166,7 @@ myModule.getName();
 ## amd
 
 异步模块定义（英文：Asynchronous Module Definition，缩写：amd）  
-由于 commonJs 加载模块是同步的，如果按照其书写风格的话，在当年那个没有 webpack 的年代，并不适用于浏览器
+由于 commonJs 加载模块是同步的，如果按照其书写风格的话，在当年那个没有 webpack 的年代，并不适用于浏览器。
 requireJs 是2011年开源的一个 amd 规范的模块加载器，通过函数包装的语法加载模块
 
 ```js
@@ -188,9 +188,9 @@ require(['a.js'], function(a) {
 
 ## cmd
 
-cmd 是 seaJs 提出的模块概念，并没有成为规范  
+cmd 是 seaJs 提出的模块概念，并没有成为规范。  
 seaJs 是在 requireJs 的基础上更贴合 commonJs 的书写风格
-只要经过了 define 的包装，就可以像 nodeJs 一样书写代码
+只要经过了 define 的包装，就可以像 nodeJs 一样书写代码。
 
 ```js
 // 所有模块都通过 define 来定义
@@ -217,8 +217,8 @@ define(['a', 'b'], function(a, b){
 ## umd
 
 通用模块定义（英文：Universal Module Definition，缩写：umd）  
-从前文可以了解到，amd 规范用于浏览器，commonJs 用于 nodeJs，为了解决跨平台问题，于是便有两种规范的结合
-实现原理就是做一层 polyfill，根据环境使用的规范去导出
+从前文可以了解到，amd 规范用于浏览器，commonJs 用于 nodeJs，为了解决跨平台问题，于是便有两种规范的结合。
+实现原理就是做一层 polyfill，根据环境使用的规范去导出。
 
 ```js
 // if the module has no dependencies, the above pattern can be simplified to
@@ -245,8 +245,7 @@ define(['a', 'b'], function(a, b){
 
 ## 插曲
 
-此时，随着 nodeJs 的流行，我们可以使用 nodeJs 做一些词法分析和代码转换  
-browsify 应运而生，我们在浏览器端也可以完全使用 commonJs 的书写风格
+此时，随着 nodeJs 的流行，我们可以使用 nodeJs 做一些词法分析和代码转换。例如 browsify，我们在浏览器端也可以完全使用 commonJs 的书写风格。
 
 ```js
 var foo = require('lib/foo');
@@ -264,12 +263,11 @@ require.define('lib/foo', function (require, module, exports) {
 });
 ```
 
-之后，便有了 bebel，gulp，grunt，webpack，rollup 一系列编译工具链，开启了前端工程化的时代
+之后，便有了 babel，gulp，grunt，webpack，rollup 一系列编译工具链，开启了前端工程化的时代。
 
 ## esModule
 
-esModule 是 es6 中浏览器对模块化的原生支持，只能用于 `<script type="module"></script> 中并且，浏览器执行到 import 语句时会发起一个请求。esModule 带出的变量都是只读的，不能在外部修改  
-当然 webpack 中能用是因为做了兼容处理转成了 es5
+esModule 是 es6 中浏览器对模块化的原生支持，只能用于 `<script type="module"></script>` 中。浏览器执行到 import 语句时会发起一个请求。另外 esModule 导出的变量都是只读的，不能在外部修改。  
 esModule 的部分语法如下
 
 ```js
@@ -286,8 +284,9 @@ myModule.add();
 
 ### esModule 的导出
 
-需要注意的是 esModule 默认导出和普通导出是有表现差异的  
-使用 export 导出的变量都是强绑定
+需要注意的是 esModule 默认导出和普通导出是有表现差异的。  
+
+1. 使用 export 导出的变量都是强绑定
 
 ```js
 // a.js
@@ -304,7 +303,7 @@ console.log(a.add());   // 2
 console.log(a.counter); // 2
 ```
 
-使用 export default 导出的变量类似于函数传参的效果，简单类型不会共享，复杂类型会共享
+2. 使用 export default 导出的变量类似于函数传参的效果，简单类型不会共享，复杂类型会共享
 
 ```js
 // a.js
@@ -340,8 +339,8 @@ if (flag) {
 module.exports[localStorage.getItem(Math.random())] = () => { … };
 ```
 
-commonJs 动态引入和静态引入的语法是一致的，构建工具无法在构建时知道导出的符号是什么名称，因为这里需要的信息可能会出现在用户浏览器的上下文中，所以编译器无法正确地进行优化  
-而 esModule 是采用关键字的形式，import 只能放在顶层，动态引入和静态引入有很好的区分  
+commonJs 动态引入和静态引入的语法是一致的，构建工具无法在构建时知道导出的符号是什么名称，因为这里需要的信息可能会出现在用户浏览器的上下文中，所以编译器无法正确地进行优化。  
+而 esModule 是采用关键字的形式，import 只能放在顶层，动态引入和静态引入有很好的区分。  
 总的来说，两者的差异为
 
 - esModule 的静态特性更有利于 tree shaking，对编译器友好
@@ -351,20 +350,20 @@ commonJs 动态引入和静态引入的语法是一致的，构建工具无法�
 
 ### tree shaking
 
-tree shaking 是指在代码引入/定义后没有使用到的情况下，会将代码删除
-commonJs 规范太过灵活，不适合做 tree shaking，esModule 是静态引入，容易做 tree shaking
-对第三方 npm 模块 tree shaking 的前提是该模块有 esModule 规范的 es5 语法的入口
+tree shaking 是指在代码引入/定义后没有使用到的情况下，会将代码删除。
+commonJs 规范太过灵活，不适合做 tree shaking，esModule 是静态引入，容易做 tree shaking。
+对第三方 npm 模块 tree shaking 的前提是该模块有 esModule 规范的 es5 语法的入口。
 
 #### 如何编写 tree shaking 友好的代码
 
-tree shaking 需要 npm 模块的支持，以 webpack 为例，如果是第三方 npm 模块的话，需要在 package.json 配置 pkg.module 和 pkg.sideEffects 字段
+tree shaking 需要 npm 模块的支持，以 webpack 为例，如果是第三方 npm 模块的话，需要在 package.json 配置 module 和 sideEffects 字段。
 
 1. 在编写 npm 包时，需要打包出基于 es6 模块语法，使用 es5 语法编写的目录，并且配置 pkg.module
 2. 在 pkg.sideEffects 字段，指出有副作用的代码（引入没用到也不要删掉的代码），防止代码被编译器误删
   
-经实测，webpack4、webpack5 在 production mode 都会默认开启 tree shaking，对使用 esModule 的语法（不管是 export 还是 export default）都能够做到 tree shaking，而使用 commonJs 规范的语法是无法进行 tree shaking 的
+经实测，webpack4、webpack5 在 production mode 都会默认开启 tree shaking，对使用 esModule 的语法（不管是 export 还是 export default）都能够做到 tree shaking，而使用 commonJs 规范的语法是无法进行 tree shaking 的。
 
-所以在项目平时使用时，用 esModule 语法，而不是用 commonJs 语法
+所以在项目平时使用时，用 esModule 语法，而不是用 commonJs 语法。
 
 #### package.json 相关的字段
 
@@ -383,7 +382,7 @@ tree shaking 需要 npm 模块的支持，以 webpack 为例，如果是第三�
   ],
 ```
 
-优先级：优先根据构建工具的配置，如 webpack 的 `resolve.mainFields`。一般来说，main 的优先级最低  
+优先级：优先根据构建工具的配置，如 webpack 的 `resolve.mainFields`。一般来说，main 的优先级最低。  
 在 webpack 中，如果配置了 `target: 'web'`，优先级为 'browser' > 'module' > 'main'，也可手动配置 `resolve.mainFields`
 
 ### 普通 script 和 type="module" script 的区别
