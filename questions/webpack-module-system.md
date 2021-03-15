@@ -8,7 +8,7 @@ webpack 模块定义是比较贴近于 commonJS 规范的，原因大概能猜�
 
 ### 变量 `__webpack_modules__`
 
-模块经过 webpack 的打包后，变成一个键值对，挂载在 `__webpack_modules__` 对象上，下面是一个 commonJs 模块打包后的代码  
+模块经过 webpack 的打包后，变成一个键值对，挂载在 `__webpack_modules__` 对象上，下面是 commonJs 和 esModule 模块打包后的代码。  
 
 ```js
 var __webpack_modules__ = ({
@@ -25,15 +25,39 @@ var __webpack_modules__ = ({
             console.log(name);
           }
         }
+/***/ }),
+
+/***/ "./src/esm/esm.js":
+/*!************************!*\
+  !*** ./src/esm/esm.js ***!
+  \************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "log": () => (/* binding */ log),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+function log() {
+  console.log(1);
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  log() {
+    console.log(2);
+  }
+});
+
 /***/ })
 
 })
 ```
 
+打包之后的模块变成了一个有副作用的函数，对传进来的参数加上模块的导出变量。
+
 ### 函数对象 `__webpack_require__`
 
-`__webpack_require__` 是模块的引入方法 ，当引入一个模块时，首先会通过缓存去拿，缓存没有再通过模块 id 作为索引，拿到`__webpack_modules__` 的模块函数去执行，并且设置一遍缓存。  
-`__webpack_require__` 不止是一个方法，还包括了其他变量，下文会有所介绍
+`__webpack_require__` 是模块的引入方法 ，当引入一个模块时，首先会通过缓存去拿，缓存没有再通过模块 id 作为索引，拿到`__webpack_modules__` 的模块函数去执行，并且设置一遍缓存，返回该模块的 exports 变量。  
+`__webpack_require__` 不止是一个方法，还包括了其他变量，下文会有所介绍。
 
 ```js
 /******/ // The module cache
@@ -338,7 +362,12 @@ esmDefaultImport.log(); // 2
 
 ## 为什么有时候 import xxx from 'xxx' 会报错
 
-这种情况只会出现在只打包出 commonJs 规范的包中。对于 commonJs 的包，webpack 是不会去包装 default 和 _esModule 变量的。此时默认引入，webpack 会读取 `exports.default` 变量，为 undefined，所以报错了，需要使用 `import * as xxx from 'xxx'`
+这个报错只会出现在以下两种情况：
+
+1. 使用默认导入的方式去引入没有默认导出的 esModule 模块
+
+2. 使用默认导入的方式去引入 commonJs 模块，并且该模块没有定义 default 的导出 `modeule.exports = { default: xxx }`
+对于以上两种情况导出的模块，webpack 是不会去包装 default 和 _esModule 变量的。当使用默认引入的方式时，webpack 读取的是该模块的 default 变量，如 `module-id__WEBPACK_IMPORTED_MODULE_1__.default`，为 undefined，所以导致报错，需要使用 `import * as xxx from 'xxx'`，此时 webpack 读取的是 `module-id__WEBPACK_IMPORTED_MODULE_1__`，这个变量在 commonJs 和没有默认导出的模块都会存在。
 
 ## export default 的问题
 
