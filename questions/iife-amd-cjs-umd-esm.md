@@ -327,8 +327,7 @@ console.log(a.counter); // 1
 
 ## esModule 和 commonJs 的区别
 
-- commonJs 是动态的，esModule 是静态的
-由于 commonJs 的 require 其实本质上就是个普通函数，module.export 本质上就是个对象。所以可以再任何地方执行 require，导出任何想导出的东西，如
+由于 commonJs 的 require 本质上是个普通函数，module.export 也只是个对象。所以可以再任何地方执行 require，导出任何想导出的东西，如
 
 ```js
 const flag = Math.round(Math.random() * 100) % 2;
@@ -337,9 +336,13 @@ if (flag) {
 } else {
   module.export = require('./b.js');
 }
+// 或者
+module.exports[localStorage.getItem(Math.random())] = () => { … };
 ```
 
-而 esModule 是采用关键字的形式，import 只能放在顶层
+commonJs 动态引入和静态引入的语法是一致的，构建工具无法在构建时知道导出的符号是什么名称，因为这里需要的信息可能会出现在用户浏览器的上下文中，所以编译器无法正确地进行优化  
+而 esModule 是采用关键字的形式，import 只能放在顶层，动态引入和静态引入有很好的区分  
+总的来说，两者的差异为
 
 - esModule 的静态特性更有利于 tree shaking，对编译器友好
 - esModule export 导出变量是强绑定（简单类型和引用类型都会共享），export default 的是值的拷贝，和 commonJs 一样，类似于函数传参
@@ -350,22 +353,18 @@ if (flag) {
 
 tree shaking 是指在代码引入/定义后没有使用到的情况下，会将代码删除
 commonJs 规范太过灵活，不适合做 tree shaking，esModule 是静态引入，容易做 tree shaking
-对第三方 npm 包 tree shaking 的前提是 npm 包有 esModule 规范的 es5 语法的入口
+对第三方 npm 模块 tree shaking 的前提是该模块有 esModule 规范的 es5 语法的入口
 
-#### 如何写出 tree shaking 友好的代码
+#### 如何编写 tree shaking 友好的代码
 
-tree shaking 需要 npm 模块的支持，以 webpack 为例，要注意 pkg.module 和 pkg.sideEffects 字段
-我们平时编写可能需要 tree shaking 的模块时，使用 export 而不是 export default
-但不是完全不用 export default，如果模块只有单个导出，如配置项，组件，class，这时候可以使用 export default  
-引入时，`import * as xxx from 'xxx'` 或者 `import { add } from 'xxx'`
-在编写 npm 包时，要注意打包出基于 es6 模块语法，使用 es5 语法编写的目录，并且配置 pkg.module，在 pkg.sideEffects 字段
-指出有副作用的代码（引入没用到也不要删掉的代码）
+tree shaking 需要 npm 模块的支持，以 webpack 为例，如果是第三方 npm 模块的话，需要在 package.json 配置 pkg.module 和 pkg.sideEffects 字段
 
-### npm package 打包规范
+1. 在编写 npm 包时，需要打包出基于 es6 模块语法，使用 es5 语法编写的目录，并且配置 pkg.module
+2. 在 pkg.sideEffects 字段，指出有副作用的代码（引入没用到也不要删掉的代码），防止代码被编译器误删
+  
+经实测，webpack4、webpack5 在 production mode 都会默认开启 tree shaking，对使用 esModule 的语法（不管是 export 还是 export default）都能够做到 tree shaking，而使用 commonJs 规范的语法是无法进行 tree shaking 的
 
-一个 npm 包一般需要打出 esModule 和 commonJs 规范  
-其实打包出 commonJs 就已经够用了，在 node 端和浏览器端都可以正常引入  
-但考虑到 tree shaking，才会打包出 esModule 规范的，
+所以在项目平时使用时，用 esModule 语法，而不是用 commonJs 语法
 
 #### package.json 相关的字段
 
@@ -384,8 +383,8 @@ tree shaking 需要 npm 模块的支持，以 webpack 为例，要注意 pkg.mod
   ],
 ```
 
-优先级：main 优先级最低，brower 和 module 跟进具体环境的配置来  
-在 webpack 中，如果配置了 `target: 'web'`，优先级为 'browser' > 'module' > 'main'，也可手动配置 `resolve.mainFields`，具体可以查看 [webpack-resolve](https://webpack.docschina.org/configuration/resolve/)
+优先级：优先根据构建工具的配置，如 webpack 的 `resolve.mainFields`。一般来说，main 的优先级最低  
+在 webpack 中，如果配置了 `target: 'web'`，优先级为 'browser' > 'module' > 'main'，也可手动配置 `resolve.mainFields`
 
 ### 普通 script 和 type="module" script 的区别
 
@@ -429,3 +428,4 @@ tree shaking 需要 npm 模块的支持，以 webpack 为例，要注意 pkg.mod
 - [async vs defer attributes - growingwiththeweb](https://www.growingwiththeweb.com/2014/02/async-vs-defer-attributes.html)
 - [javaScript 模块化七日谈](http://huangxuan.me/2015/07/09/js-module-7day/)
 - [深入解析ES Module（一）：禁用export default object](https://zhuanlan.zhihu.com/p/40733281)
+- [不要再依赖 commonJs 了](https://www.infoq.cn/article/dckcjit8aeebnzbdotff)
