@@ -1,5 +1,7 @@
 # 前端模块化
 
+javascript 早期只是作为网页的脚本任务使用，提供简单的交互。随着网页越来越庞大，功能愈加复杂，javascript 已经超出了当初的设计期望，社区一直在不断地探索，完善标准，模块化就正是其中至关重要的一部分。
+
 ## IIFE
 
 立即调用函数表达式（英文：immediately-invoked function expression，缩写：IIFE）  
@@ -88,7 +90,8 @@ window.myModule = myModule;
 1. 如果模块之间有依赖，引入时 script 标签的位置很重要，难以维护
 2. 每一个模块都用单独的 script 引入会增加 http 的请求
 3. 最终还是将对象挂载到 window 下
-以上两点，都可以通过一些办法去避免  
+
+以上的问题，都可以通过一些办法去避免  
 YUI 是雅虎在 2006 年开源的一个 UI 框架，其中包含的 seed file 是一个模块加载器
 通过以下的方法创建和使用模块
 
@@ -387,7 +390,9 @@ tree shaking 需要 npm 模块的支持，以 webpack 为例，如果是第三�
 
 ### 普通 script 和 type="module" script 的区别
 
-`<script type="module"></script>` 默认是 defer？
+- 模块脚本不能直接打开，需要通过服务器打开，否则会报 cors 错误
+- 模块脚本自动使用严格模式
+- 模块脚本不需要使用 defer 属性，模块会自动延迟加载，行为和 defer 一致
 
 ### script 标签的 async 和 defer 属性
 
@@ -399,14 +404,14 @@ tree shaking 需要 npm 模块的支持，以 webpack 为例，如果是第三�
 
 #### defer 延迟加载
 
-- 声明 defer 属性的脚本会在后台下载，等 DOM 树构建完成之后再执行，下载和执行时都不会阻塞页面渲染
-- 声明 defer 属性的脚本总是要等到 DOM 解析完毕时触发，但在 `DOMContentLoaded` 事件之前执行，会阻塞 `DOMContentLoaded` 事件
+- 声明 defer 属性的脚本会在后台下载，等 DOM 树构建完成之后再执行，执行的时候页面已经渲染完毕
+- 声明 defer 属性的脚本，但在 `DOMContentLoaded` 事件之前执行，会阻塞 `DOMContentLoaded` 事件
 - 多个声明 defer 的脚本，会并行下载，并会按照声明的顺序执行脚本，而不是下载完成的顺序，即脚本之间会相互等待
 
 #### async 异步加载
 
 - 声明 async 属性的脚本会在后台下载，下载完立即执行，下载是不会阻塞页面渲染，但执行时会阻塞页面渲染
-- 声明 async 属性的脚本总是要等到 DOM 解析完毕时触发，但不会阻塞 `DOMContentLoaded` 事件，可能会在之前或之后触发
+- 声明 async 属性的脚本总是要等到 DOM 解析完毕时触发，但不会阻塞 `DOMContentLoaded` 事件，可能会在之前或之后触发，取决于脚本下载的时间
 - 多个声明 async 的脚本，会并行下载，并在下载完成之后执行，不会等待其他 async 脚本，即谁先下载完谁执行
 
 #### 动态脚本
