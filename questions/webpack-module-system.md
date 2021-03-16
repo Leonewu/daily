@@ -115,7 +115,7 @@ function log() {
 
 ### 函数 `__webpack_require__.n`
 
-`__webpack_require__.n` 是引入模块时可能会调用的函数，是对 esModule 默认引入的处理
+`__webpack_require__.n` 是默认导入模块时调用的函数，如果引入的模块是 esModule 就返回 default，不是就直接返回模块
 
 ```js
 // getDefaultExport function for compatibility with non-harmony modules
@@ -128,16 +128,11 @@ function log() {
 /******/   };
 ```
 
-以下几种情况会调用该函数
-
-- 使用 import 引入 commonJs 模块，无论是否默认导入
-- 使用 import 默认导入没有默认导出的模块，即 `import module1 from 'module1.js'` 并且 module1 中没有默认导出
-
 另外，下面的情况会报错
 
 - 使用 require 引入只有默认导出的 esModule 模块
 
-这种情况 webpack 是不会调用 `__webpack_require__.n` 的，但其实导出的变量实际上在 `export.default` 上，没有调用 `__webpack_require__.n` 会导致拿不到变量
+因为这种情况 webpack 是不会调用 `__webpack_require__.n` 的，但其实导出的变量实际上在 `export.default` 上，没有调用 `__webpack_require__.n` 会导致拿不到变量
 
 ## webpack 对 esModule 和 commonJs 模块的处理
 
@@ -362,12 +357,11 @@ esmDefaultImport.log(); // 2
 
 ## 为什么有时候 import xxx from 'xxx' 会报错
 
-这个报错只会出现在以下两种情况：
+这个报错只会出现在以下情况：
 
 1. 使用默认导入的方式去引入没有默认导出的 esModule 模块
 
-2. 使用默认导入的方式去引入 commonJs 模块，并且该模块没有定义 default 的导出 `modeule.exports = { default: xxx }`
-对于以上两种情况导出的模块，webpack 是不会去包装 default 和 _esModule 变量的。当使用默认引入的方式时，webpack 读取的是该模块的 default 变量，如 `module-id__WEBPACK_IMPORTED_MODULE_1__.default`，为 undefined，所以导致报错，需要使用 `import * as xxx from 'xxx'`，此时 webpack 读取的是 `module-id__WEBPACK_IMPORTED_MODULE_1__`，这个变量在 commonJs 和没有默认导出的模块都会存在。
+解决方法：`import * as xxx from 'xxx'`
 
 ## export default 的问题
 

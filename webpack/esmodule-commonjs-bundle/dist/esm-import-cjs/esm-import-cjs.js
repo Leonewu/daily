@@ -95,7 +95,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _cjs_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_cjs_js__WEBPACK_IMPORTED_MODULE_0__);
 
 
-_cjs_js__WEBPACK_IMPORTED_MODULE_0__.log();
+_cjs_js__WEBPACK_IMPORTED_MODULE_0___default().log();
 })();
 
 /******/ })()

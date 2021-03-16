@@ -1,3 +1,3 @@
-import * as esm from './cjs.js';
+import esm from './cjs.js';
 
 esm.log();
