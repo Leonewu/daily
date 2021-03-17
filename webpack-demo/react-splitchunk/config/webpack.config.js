@@ -209,7 +209,7 @@ module.exports = function (webpackEnv) {
       futureEmitAssets: true,
       // There are also additional JS chunk files if you use code splitting.
       chunkFilename: isEnvProduction
-        ? 'static/js/[name].[contenthash:8].chunk.js'
+        ? 'static/js/[name]_[contenthash:8].chunk.js'
         : isEnvDevelopment && 'static/js/[name].chunk.js',
       // webpack uses `publicPath` to determine where the app is being served from.
       // It requires a trailing slash, or the file assets will get an incorrect path.
@@ -299,7 +299,17 @@ module.exports = function (webpackEnv) {
       // https://medium.com/webpack/webpack-4-code-splitting-chunk-graph-and-the-splitchunks-optimization-be739a861366
       splitChunks: {
         chunks: 'all',
-        name: isEnvDevelopment,
+        automaticNameDelimiter: '-',
+        // name: isEnvDevelopment,
+        cacheGroups: {
+          vendor: {
+            minSize: 0,
+            test: /[\\/]node_modules[\\/]/,
+            priority: 10,
+            minChunks: 1,
+          },
+          default: false
+        }
       },
       // Keep the runtime chunk separated to enable long term caching
       // https://twitter.com/wSokra/status/969679223278505985
