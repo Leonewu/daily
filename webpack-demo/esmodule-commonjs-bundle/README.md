@@ -5,8 +5,8 @@ src 为源码目录
 dist 为编译目录  
 编译：
 
-1. 在 webpack 目录下 npm i
-2. 在 esmodule-commonjs-bundle 目录下执行 npx webpack
+1. npm i
+2. npx webpack
 
 目录解释
 

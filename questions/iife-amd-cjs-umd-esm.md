@@ -248,14 +248,14 @@ define(['a', 'b'], function(a, b){
 
 ## 插曲
 
-此时，随着 nodeJs 的流行，我们可以使用 nodeJs 做一些词法分析和代码转换。例如 browsify，我们在浏览器端也可以完全使用 commonJs 的书写风格。
+此时，随着 nodeJs 的流行，我们可以使用 nodeJs 做一些词法分析和代码转换。例如 browserify，我们在浏览器端也可以完全使用 commonJs 的书写风格。
 
 ```js
 var foo = require('lib/foo');
 module.export = { bar() {} };
 ```
 
-`browsify lib/foo.js >> modules.js` 转换成
+`browserify lib/foo.js >> modules.js` 转换成
 
 ```js
 require.define('lib/foo', function (require, module, exports) {
