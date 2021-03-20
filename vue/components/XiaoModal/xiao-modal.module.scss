@@ -1,0 +1,124 @@
+.modal {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
+  z-index: 1000;
+  -webkit-backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  &.center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    .box {
+      margin-top: -0.52rem;
+    }
+  }
+  // &:global(.v-enter) {
+  //   opacity: 0;
+  //   .box {
+  //     transform: scale(1.1);
+  //   }
+  // }
+  // &:global(.v-leave-to) {
+  //   opacity: 0;
+  //   .box {
+  //     transform: scale(0.9);
+  //   }
+  // }
+  // &:global(.v-enter-active), &:global(.v-leave-active) {
+  //   transition: opacity .3s ease;
+  //   .box {
+  //     transition: transform .3s ease;
+  //   }
+  // }
+}
+.modal_pc {
+  overflow-y: unset;
+  .box {
+    max-width: 10rem;
+  }
+}
+.transformDefault {
+  &:global(.v-enter) {
+    opacity: 0;
+    .box {
+      transform: scale(1.1);
+    }
+  }
+  &:global(.v-leave-to) {
+    opacity: 0;
+    .box {
+      transform: scale(0.9);
+    }
+  }
+  &:global(.v-enter-active),
+  &:global(.v-leave-active) {
+    transition: opacity 0.3s ease;
+    .box {
+      transition: transform 0.3s ease;
+    }
+  }
+}
+
+.transformUpDown {
+  &:global(.v-enter) {
+    opacity: 0;
+    .box {
+      transform: translateY(0.533333rem);
+    }
+  }
+  &:global(.v-leave-to) {
+    opacity: 0;
+    .box {
+      transform: translateY(0.533333rem);
+    }
+  }
+  &:global(.v-enter-active),
+  &:global(.v-leave-active) {
+    transition: all 0.3s ease;
+    .box {
+      transition: all 0.3s ease;
+    }
+  }
+}
+
+.dimmer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(#000, 0);
+  transition: all 0.15s ease-out;
+  z-index: 1;
+}
+.dimmerChange {
+  background: rgba(#000, 0.6);
+}
+.box {
+  position: relative;
+  margin: 0 auto;
+  z-index: 2;
+}
+
+.close {
+  position: absolute;
+  bottom: -1.3066666666666666rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0.773333rem;
+  height: 0.773333rem;
+  user-select: none;
+  background: url("./images/notes_close_nor@3x.png") 0 0 no-repeat;
+  background-size: contain;
+  &:active {
+    background-image: url("./images/notes_close_pre@3x.png");
+  }
+}
+.compatiblePC {
+  max-width: 10rem;
+  margin: 0 auto;
+}

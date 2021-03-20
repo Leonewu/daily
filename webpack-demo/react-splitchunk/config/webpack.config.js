@@ -308,7 +308,6 @@ module.exports = function (webpackEnv) {
             priority: 10,
             minChunks: 1,
           },
-          default: false
         }
       },
       // Keep the runtime chunk separated to enable long term caching
