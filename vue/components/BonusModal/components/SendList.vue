@@ -5,7 +5,7 @@
         <div :class="$style.th">打开链接人昵称</div>
         <div :class="$style.th">打开链接时间</div>
       </header>
-      <ul :class="$style.tbody" :style="{ maxHeight: `calc(100vh - 80px - ${theadOffsetTop}px)` }">
+      <ul :class="$style.tbody" :style="{ maxHeight: `calc(100vh - 120px - ${theadOffsetTop}px)` }">
         <li :class="$style.tr" v-for="(item, index) in list" :key="index">
           <div :class="$style.td"><img :src="item.portrait_url" /><span :class="$style.name">{{ item.nickname }}</span></div>
           <div :class="$style.td">{{ item.view_link_time }}</div>
@@ -13,7 +13,7 @@
       </ul>
     </div>
     <div :class="$style.empty" v-else>
-      <img :class="$style.img" src="../images/public_empty_img8@2x.png" />
+      <img :class="$style.img" src="../images/newEmpty/public_empty_img8@2x.png" />
       <p :class="$style.tip">当前未有好友打开您的推荐链接<br />赶紧去邀请好友吧~</p>
       <a :class="$style.btn">去邀请 拿现金</a>
     </div>
@@ -63,7 +63,6 @@ export default {
 .table {
   width: 100%;
   padding: .64rem /* 48/75 */ 0;
-  min-height: 6.45333333rem /* 484/75 */;
 }
 .thead {
   width: 100%;

@@ -16,18 +16,12 @@
         >&#xe759;</span>
       </header>
       <section :class="$style.content">
-        <ul :class="$style.tab">
-          <li 
-            v-for="(tab, key) in tabs" 
-            :key="key" 
-            :class="{ [$style.active]: currentTab === key }"
-            @click="currentTab = key"
-          >{{ tab }}</li>
-        </ul>
+        <Tabs :tabs="tabs" v-model="currentTab"/>
         <div :class="$style.tabContent">
-          <Card :type="currentTab" :count="count" />
+          <Card v-if="['count', 'bonus'].includes(currentTab)" :type="currentTab" :count="count" />
           <SendList v-if="currentTab === 'count'" :list="sendList" />
-          <CashBonusList v-else :list="bonusList" />
+          <CashBonusList v-else-if="currentTab === 'bonus'" :list="bonusList" />
+          <AwardList v-else :list="awardList"/>
         </div>
       </section>
     </div>
@@ -39,20 +33,17 @@ import XiaoModal from '../XiaoModal/XiaoModal.vue'
 import CashBonusList from './components/CashBonusList.vue'
 import SendList from './components/SendList.vue'
 import Card from './components/Card.vue'
+import Tabs from './components/Tabs.vue'
 
 export default {
   components: {
-    XiaoModal, CashBonusList, SendList, Card
+    XiaoModal, CashBonusList, SendList, Card, Tabs
   },
   data() {
     return {
       visible: true,
       // 当前 tab 'count' | 'bonus'
       currentTab: 'count',
-      tabs: {
-        'count': '已发送人数',
-        'bonus': '现金奖励'
-      },
       sendList: [
         {
           portrait_url: 'https://avatars.githubusercontent.com/u/22951514?s=88&u=d7398394a4df01ed47008a727ea7ab72c72ac931&v=4',
@@ -150,7 +141,10 @@ export default {
           is_reward: false
         }
       ],
-      cashback: 0
+      cashback: 0,
+      awardList: [
+        { url: 'sdkdkd' }
+      ],
     }
   },
   computed: {
@@ -159,6 +153,22 @@ export default {
         return this.sendList.length
       }
       return this.cashback.toFixed(2)
+    },
+    tabs() {
+      return [
+        {
+          key: 'count',
+          value: '已发送人数',
+        },
+        {
+          key: 'bonus',
+          value: '现金奖励'
+        },
+        {
+          key: 'award',
+          value: '我的奖品'
+        }
+      ]
     }
   },
   methods: {
@@ -211,101 +221,6 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-}
-.tab {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  align-items: flex-end;
-  list-style: none;
-  & > li {
-    width: 4.82666667rem /* 362/75 */;
-    height: .88rem /* 66/75 */;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: .37333333rem /* 28/75 */;
-    font-weight: 400;
-    border-radius: .32rem /* 24/75 */ .32rem /* 24/75 */ 0px 0px;
-    color: #5A5A5A;
-    position: relative;
-    z-index: 1;
-  }
-  & > li:first-child {
-    background: linear-gradient(90deg, #FFFFFF 0%, #FFE4E0 100%);
-  }
-  & > li:last-child {
-    background: linear-gradient(270deg, #FFFFFF 0%, #FFE4E0 100%);
-  }
-  & > li:first-child.active {
-    width: 4.74666667rem /* 356/75 */;
-    font-size: .42666667rem /* 32/75 */;
-    font-weight: 500;
-    height: 1.06666667rem /* 80/75 */;
-    background: transparent;
-    color: #282828;
-    z-index: 2;
-    &::before {
-      content: '';
-      width: 80%;
-      height: 100%;
-      position: absolute;
-      border-radius: .32rem /* 24/75 */ 0 0 0;
-      left: 0;
-      bottom: 0;
-      z-index: -1;
-      background: #fff;
-    }
-    &::after {
-      content: '';
-      width: 50%;
-      height: 100%;
-      background: #fff;
-      position: absolute;
-      right: -.53333333rem /* 40/75 */;
-      bottom: 0;
-      z-index: -2;
-      border-radius: 0 .42666667rem /* 32/75 */ 0 0;
-      transform-origin: 0 100%;
-      transform: skew(10deg);
-      box-shadow: 0px 8px 12px 0px rgba(238, 90, 70, 0.48);
-    }
-  }
-  & > li:last-child.active {
-    width: 4.74666667rem /* 356/75 */;
-    font-size: .42666667rem /* 32/75 */;
-    font-weight: 500;
-    height: 1.06666667rem /* 80/75 */;
-    background: transparent;
-    color: #282828;
-    z-index: 2;
-    &::before {
-      content: '';
-      width: 80%;
-      height: 100%;
-      position: absolute;
-      border-radius: 0 .32rem /* 24/75 */ 0 0;
-      right: 0;
-      bottom: 0;
-      z-index: -1;
-      background: #fff;
-    }
-    &::after {
-      content: '';
-      width: 50%;
-      height: 100%;
-      background: #fff;
-      position: absolute;
-      left: -.53333333rem /* 40/75 */;
-      bottom: 0;
-      z-index: -2;
-      border-radius: .42666667rem /* 32/75 */ 0 0 0;
-      transform-origin: 0 100%;
-      transform: skew(-10deg);
-      box-shadow: 0px 8px 12px 0px rgba(238, 90, 70, 0.48);
-    }
-  }
 }
 .tabContent {
   padding: 0 .42666667rem /* 32/75 */;
