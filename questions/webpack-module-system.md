@@ -357,11 +357,25 @@ esmDefaultImport.log(); // 2
 
 ## 为什么有时候 import xxx from 'xxx' 会报错
 
-这个报错只会出现在以下情况：
+这个报错只会出现在以下两种情况
 
-1. 使用默认导入的方式去引入没有默认导出的 esModule 模块
+- 使用默认导入的方式引入没有默认导出的 esModule 模块
+- 使用默认导入的方式引入 commonJs 模块
 
-解决方法：`import * as xxx from 'xxx'`
+解决方法：
+
+- `import * as xxx from 'xxx'`
+- 使用 [@babel/plugin-transform-modules-commonjs](https://babeljs.io/docs/en/babel-plugin-transform-modules-commonjs) 这个插件有个配置项 `noInterop`，默认为 false，会在导入的时候做一层 polyfill，为 commonJs 规范的代码加上 default 变量
+
+```
+var _foo = _interopRequireDefault(require("foo"));
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : { default: obj };
+}
+```
+
+注意，这个插件是 @babel/preset-env 自带的。  
+举个例子：lodash 的代码中是只遵循 commonJs 规范的，只能通过非默认导入的形式引入，但有时却有 `import _ from 'lodash'` 的写法，正因为用了这个插件
 
 ## export default 的问题
 
