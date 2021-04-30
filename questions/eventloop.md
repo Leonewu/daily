@@ -20,7 +20,7 @@ JS 引擎的工作机制是：当线程中没有执行任何同步代码的前�
 - setTimeout
 - setInterval
 - 浏览器触发的 onclick，onmousemove 等 dom 回调事件
-- 要注意人工触发的 dom 回调不是宏任务，如下
+- 要注意代码触发的 dom 回调不是宏任务，如下
 
 ```js
 document.querySelector('body').addEventListener('click', () => { 
@@ -159,12 +159,18 @@ console.log('script end');
 
 ```
 
+## 思考
+
+- 宏任务，微任务，页面渲染的流程是如何的
+- 为什么大部分动画都建议在 RAF 中调用
+
 ## 注意
 
 - 浏览器是多进程多线程架构
 - 浏览器渲染进程包括 GUI 渲染线程，JS 引擎线程，事件触发线程，定时触发器线程，异步http请求线程
 - dom 的更新渲染发生在 JS 计算之后，再具体的说是在微任务执行之后
 - GUI 渲染线程和 JS 引擎线程是互斥的
+- 浏览器的冒泡和 dom 事件的行为是一致的，如果是代码触发的冒泡，则是同步执行；如果是浏览器触发的冒泡，则下一次冒泡事件会提交到宏任务队列执行，可以查看这个[demo](https://codesandbox.io/s/eventloop-h063j?file=/src/index.js)
 
 ## 参考
 
