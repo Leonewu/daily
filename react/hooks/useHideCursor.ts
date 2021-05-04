@@ -27,7 +27,6 @@ function debounce(fn: Function, delay: number) {
   let timer: any = null;
   return function t(this: any, ...args: any[]) {
     if (timer) {
-      console.log('清除定时器');
       clearTimeout(timer);
     }
     timer = setTimeout(() => {
@@ -39,7 +38,7 @@ function debounce(fn: Function, delay: number) {
 /**
  * @describtion 鼠标长时间不移动隐藏鼠标
  * @params ref 可以是 react ref 或者 dom 元素
- * @params delay(ms) 不操作 dalay 后隐藏
+ * @params wait(ms) 不操作 wait 后隐藏
  * @example
  * const ref = useRef<any>();
  * useHideCursor(ref, 10000);
@@ -47,14 +46,14 @@ function debounce(fn: Function, delay: number) {
  */
 export const useHideCursor = (
   ref: HTMLElement | React.MutableRefObject<HTMLElement>,
-  delay: number = 10000,
+  wait: number = 10000,
 ) => {
   const [isHide, setIsHide] = useState(false);
 
   const hide = useCallback(
     debounce(() => {
       setIsHide(true);
-    }, delay),
+    }, wait),
     [],
   );
 
@@ -109,4 +108,39 @@ export const useHideCursor = (
   }, []);
 
   return [isHide];
+};
+
+/**
+ * @describtion 获取鼠标是否在 wait 时间内不移动
+ * @params wait(ms) 不移动的时间
+ * @example
+ * const [isMouseStop] = useMouseStop(10000);
+ */
+export const useMouseStop = (wait: number = 10000) => {
+  const [isStop, setIsStop] = useState(true);
+  const stop = useCallback(
+    debounce(() => {
+      setIsStop(true);
+    }, wait),
+    [],
+  );
+
+  const onMouseMove = useCallback(
+    throttle(
+      () => {
+        setIsStop(false);
+        stop();
+      },
+      wait < 1000 ? 200 : 1000,
+    ),
+    [],
+  );
+
+  useEffect(() => {
+    document.addEventListener('mousemove', onMouseMove);
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove);
+    };
+  }, []);
+  return [isStop];
 };

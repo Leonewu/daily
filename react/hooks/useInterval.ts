@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 type OptionsType = {
   /** 是否在首次调用时立即执行 */
@@ -13,7 +13,7 @@ type OptionsType = {
 */
 export function useInterval(callback: Function, delay: number, options?: OptionsType) {
   const savedCallback = useRef<any>();
-  const [timer, setTimer] = useState<any>(null);
+  const timer = useRef<any>(null);
   useEffect(() => {
     savedCallback.current = callback;
   }, [callback]);
@@ -27,7 +27,7 @@ export function useInterval(callback: Function, delay: number, options?: Options
         if (options?.immediate) {
           tick();
         }
-        setTimer(setInterval(tick, delay));
+        timer.current = setInterval(tick, delay);
       }
     },
     [delay],
@@ -36,7 +36,7 @@ export function useInterval(callback: Function, delay: number, options?: Options
   return [
     start,
     () => {
-      clearInterval(timer);
+      clearInterval(timer.current);
     },
   ];
 }
