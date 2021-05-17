@@ -60,3 +60,70 @@ function reserve(node) {
   node.left && reverse(node.left)
   node.right && reverse(node.right)
 }
+
+// 打印出二叉树的所有路径 ['1 -> 2 -> 3', '1 -> 2 -> 4']
+function printPath(node) {
+  const res = [];
+  function recur(node, path) {
+    if (node.weight && !node.left && !node.right) {
+      res.push(path.concat(node.weight));
+    }
+    node.left && recur(node.left, path.concat(node.weight));
+    node.right && recur(node.right, path.concat(node.weight));
+  }
+  recur(node, []);
+  return res.map(arr => arr.join(' -> '))
+}
+
+// 求出某路径之和为 n 的二叉树路径
+function findPath(node, target) {
+  const res = [];
+  function recur(node, path, n) {
+    if (!node) return;
+    if (node.weight === n) {
+      res.push(path.concat(node.weight));
+      return;
+    }
+    if (node.weight < n) {
+      node.left && recur(node.left, path.concat(node.weight), n - node.weight)
+      node.right && recur(node.right, path.concat(node.weight), n - node.weight)
+    }
+  }
+  recur(node, [], target);
+  return res.map(arr => arr.join(' -> '));
+}
+
+
+function isPower2(n) {
+  // function getNum() {
+  //   let num = ''
+  //   const indexs = []
+  //   while(indexs.length < n) {
+  //     // if (index)
+  //   }
+  //   for (let i = 0; i < n.toString().length; i++) {
+  //     num += n[i];
+  //   }
+  // }
+  
+}
+
+// 爬梯子
+// 每次能爬 1 个阶梯或者 2 个阶梯，求 n 个阶梯的所有方案
+
+function climb(n) {
+  const coins = [1, 2];
+  // let ways = 0;
+  const res = []
+  function recur(t, paths = []) {
+    for (let i = 0; i < coins.length; i++) {
+      if (t - coins[i] === 0) {
+        res.push(path.concat(coins[i]));
+      } else if (t - coins[i] > 0) {
+        recur(t - coins[i], paths.concat(coins[i]));
+      }
+    }
+  }
+  recur(n);
+  return res;
+}

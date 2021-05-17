@@ -29,3 +29,23 @@ const while_binary_search = (arr, target) => {
   return -1
 }
 
+function binarySearch(arr, target, offset = 0) {
+  if (arr.length === 1) {
+    if (arr[0] === target) { 
+        return offset;
+    } else {
+      return -1;
+    }
+  } 
+  const index = Math.floor(arr.length / 2)
+  if (arr[index] < target) {
+    return binarySearch(arr.slice(index, arr.length), target, offset + index);
+  }
+  if (arr[index] > target) {
+    return binarySearch(arr.slice(0, index), target, offset);
+  }
+  if (arr[index] === target) { 
+    return offset + index;
+  }
+  return -1;
+}
