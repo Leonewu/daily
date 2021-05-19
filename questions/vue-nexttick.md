@@ -4,10 +4,21 @@ vue 的 nextTick 源码都在一个文件 src/core/util/next-tick.js，该文件
 所以说 nextTick 是 vue 的核心代码也不会过，nextTick 也经历了几次宏任务和微任务的更改，到目前的版本是默认采用微任务。
 关于 nextTick 的 issue 也不少，如 [#6566](https://github.com/vuejs/vue/issues/6566)，[#3771](https://github.com/vuejs/vue/issues/3771#issuecomment-249692588)。
 
-## 对data中的属性赋值后发生了什么
+## 基础知识
+
+### 对data中的属性赋值后发生了什么
 
 赋值之后，调用栈为  
 proxySetter => reactiveSetter => notify => update => queueWatcher => nextTick => flushCallbacks（更新视图）
+
+### 浏览器的事件循环
+
+具体可以看 [eventloops](https://html.spec.whatwg.org/multipage/webappapis.html#event-loops)，大致流程为
+
+1. 取出宏任务队列的一个任务执行
+2. 执行过程中不断清空微任务队列，直到微任务队列为空
+3. 执行 requestAnimationFrame，渲染，渲染完有空闲时间执行 requestIdleCallback
+4. 本次事件循环结束
 
 ## 遇到的问题
 
