@@ -1,205 +1,365 @@
 
-
-
-const queueMicrotask = (window && window.queueMicrotask) ? window.queueMicrotask : (process && process.nextTick ? process.nextTick : function() {
-  console.error('浏览器没有queueMicrotask方法')
-})
-
 class Promise {
-
   constructor(executor) {
-    this.state = "pending";
-    this.resolveCallbacks = [];
-    this.rejectCallbacks = [];
-    this.nextPromise = undefined;
-    this.value = undefined;
-    this.reason = undefined;
-    this.catchCallback = undefined;
-    if (executor && typeof executor === "function") {
-      try {
-        executor(this._resolve.bind(this), this._reject.bind(this));
-      } catch (e) {
-        this._resetAndReject(e);
-      }
+    this._state = "pending";
+    this._next = undefined;
+    this._value = undefined;
+    this._error = undefined;
+    this._resolveCallback = undefined;
+    this._rejectCallback = undefined;
+    this._catchCallback = undefined;
+    this._finallyCallback = undefined;
+    if (typeof executor !== "function") {
+      throw new Error("executor is not a function");
     }
+    executor(this.resolve.bind(this), this.reject.bind(this));
   }
-
-  static resolve(value) {
-    return new Promise((resolve, reject) => {
-      resolve(value);
-    });
-  }
-
-  static reject(reason) {
-    return new Promise((resolve, reject) => {
-      reject(reason);
-    });
-  }
-
-  _resolve(value) {
-    if (this.state === "pending") {
-      this.state = "fulfilled";
-      this.value = value;
-      try {
-        if (this.resolveCallbacks.length) {
-          while (this.resolveCallbacks.length) {
-            const onResolve = this.resolveCallbacks.pop();
-            const result = onResolve(value);
-            // 如果有下一个promise，继续resolve
-            if (result instanceof Promise) {
-              result.then(v => {
-                this.nextPromise && this.nextPromise._resolve(v);
-              });
-            } else {
-              this.nextPromise && this.nextPromise._resolve(result);
-            }
-          }
-        } else {
-          // 如果回调是空的，value就一直传递下去
-          this.nextPromise && this.nextPromise._resolve(value);
-        }
-      } catch (error) {
-        // 因为上面已经是把状态给修改成fulfilled了，所以reject会不生效，这个时候要将状态回滚为pending
-        this._resetAndReject(error);
-      }
-    }
-  }
-
-  then(onResolve, onReject) {
-    // then 一直都会返回一个新的promise
-    let promise = new Promise();
-    if (this.state === "pending") {
-      // 异步，存到队列中
-      if (onResolve && typeof onResolve === "function") {
-        this.resolveCallbacks.push(onResolve);
-      }
-      if (onReject && typeof onReject === "function") {
-        this.rejectCallbacks.push(onReject);
-      }
-    } else if (this.state === "fulfilled") {
-      // 执行then的时候状态已经是fulfilled
-      promise = new Promise((resolve, reject) => {
+  resolve(v) {
+    if (this._state === "pending") {
+      this._value = v;
+      this._state = "fulfilled";
+      if (this._resolveCallback) {
         queueMicrotask(() => {
-          try {
-            if (onResolve && typeof onResolve === "function") {
-              const result = onResolve(this.value);
-              if (result instanceof Promise) {
-                result.then(
-                  v => {
+          this._resolveCallback(this._value);
+        });
+      }
+    }
+  }
+  reject(e) {
+    if (this._state === "pending") {
+      this._error = e;
+      this._state = "rejected";
+      const callback = this._rejectCallback || this._catchCallback;
+      if (callback) {
+        queueMicrotask(() => {
+          callback(this._error);
+        });
+      }
+    }
+  }
+  then(onResolve, onReject) {
+    return new Promise((resolve, reject) => {
+      if (this._state === "pending") {
+        if (typeof onResolve === "function") {
+          this._resolveCallback = (value) => {
+            try {
+              const res = onResolve(value);
+              if (res instanceof Promise) {
+                res.then(
+                  (v) => {
                     resolve(v);
                   },
-                  r => {
-                    reject(r);
+                  (e) => {
+                    reject(e);
                   }
                 );
               } else {
-                resolve(result);
+                resolve(res);
               }
-            } else {
-              resolve(this.value)
+            } catch (e) {
+              reject(e);
             }
-          } catch (error) {
-            reject(error)
-          }
-        });
-      });
-    } else if (this.state === "rejected") {
-      // 执行then的时候状态已经是rejected
-      promise = new Promise((resolve, reject) => {
-        queueMicrotask(() => {
-          try {
-            if (onReject && typeof onReject === "function") {
-              const result = onReject(this.reason);
-              if (result instanceof Promise) {
-                // 注意这里的result是内部return的promise的最后一个then返回的promise
-                // 所以其实不管哪个promise的resolveCallbacks，长度都只是1或者0
-                result.then(
-                  v => {
+          };
+        }
+        if (typeof onReject === "function") {
+          this._rejectCallback = (err) => {
+            try {
+              const res = onReject(err);
+              if (res instanceof Promise) {
+                res.then(
+                  (v) => {
                     resolve(v);
                   },
-                  r => {
-                    reject(r);
+                  (e) => {
+                    reject(e);
                   }
-                  );
-                }
-            } else {
-              reject(this.reason)
+                );
+              } else {
+                resolve(res);
+              }
+            } catch (e) {
+              reject(e);
             }
-          } catch (error) {
-            reject(error)
-          }
-        });
-      });
-    }
-    this.nextPromise = promise;
-    return promise;
-  }
-
-  _reject(reason) {
-    if (this.state === "pending") {
-      this.state = "rejected";
-      this.reason = reason;
-      if (this.rejectCallbacks.length) {
-        // reject的优先级比catch高，如果有onReject，就执行onReject
-        try {
-          while (this.rejectCallbacks.length) {
-            const onReject = this.rejectCallbacks.pop();
-            const result = onReject(reason);
-            if (result instanceof Promise) {
-              result.then(
-                v => {
-                  this.nextPromise && this.nextPromise._resolve(v);
+          };
+        } else {
+          reject(this._error);
+        }
+      }
+      if (this._state === "fulfilled") {
+        if (typeof onResolve === "function") {
+          try {
+            const res = onResolve(this._value);
+            if (res instanceof Promise) {
+              // 返回实例是 promise，等待这个 promise
+              res.then(
+                (v) => {
+                  resolve(v);
                 },
-                r => {
-                  this.nextPromise && this.nextPromise._reject(r);
+                (e) => {
+                  reject(e);
                 }
               );
+            } else {
+              resolve(res);
             }
+          } catch (e) {
+            reject(e);
           }
-        } catch (error) {
-          /* 回滚状态并reject */
-          this._resetAndReject(error);
+        } else {
+          resolve(this._value);
         }
-      } else if (this.catchCallback) {
-        queueMicrotask(() => {
-          this.catchCallback(reason);
-        });
-      } else {
-        // 如果catch没有回调或者then中的onReject是空的，reason就一直传递下去
-        this.nextPromise && this.nextPromise._reject(reason);
       }
-    }
+      if (this._state === "rejected") {
+        if (typeof onReject === "function") {
+          try {
+            const res = onReject(this._error);
+            if (res instanceof Promise) {
+              res.then(
+                (v) => {
+                  resolve(v);
+                },
+                (e) => {
+                  resolve(e);
+                }
+              );
+            } else {
+              resolve(res);
+            }
+          } catch (e) {
+            reject(e);
+          }
+        } else {
+          // 没有传 onReject 函数就继续
+          reject(this._error);
+        }
+      }
+    });
   }
-
-  catch(catchCallback) {
-    if (catchCallback && typeof catchCallback === "function") {
-      this.catchCallback = catchCallback;
-    }
-    if (this.state === "rejected") {
-      // 如果已经是rejected就马上执行
-      queueMicrotask(() => {
-        this.catchCallback(this.reason);
-      });
-    }
-    return new Promise();
+  finally(finallyFn) {
+    return new Promise((resolve, reject) => {
+      if (this._state === "pending") {
+        if (typeof finallyFn === "function") {
+          this._finallyCallback = () => {
+            try {
+              const res = finallyFn();
+              if (res instanceof Promise) {
+                res.then(
+                  (v) => {
+                    resolve(v);
+                  },
+                  (e) => {
+                    reject(e);
+                  }
+                );
+              } else {
+                resolve();
+              }
+            } catch (e) {
+              reject(e);
+            }
+          };
+        }
+      }
+      if (["fulfilled", "rejected"].includes(this._state)) {
+        if (typeof finallyFn === "function") {
+          try {
+            const res = finallyFn();
+            if (res instanceof Promise) {
+              res.then(
+                (v) => {
+                  resolve(v);
+                },
+                (e) => {
+                  reject(e);
+                }
+              );
+            } else {
+              resolve();
+            }
+          } catch (e) {
+            reject(e);
+          }
+        } else {
+          resolve(this._value);
+        }
+      }
+    });
   }
-
-  _resetAndReject(reason) {
-    // 重置promise并且reject 在trycatch出错后要回滚状态后才能reject
-    this.state = "pending";
-    this.value = undefined;
-    this.reason = undefined;
-    this._reject(reason);
+  catch(catchFn) {
+    return new Promise((resolve, reject) => {
+      if (this._state === "pending") {
+        if (typeof catchFn === "function") {
+          this._catchCallback = (err) => {
+            try {
+              const res = catchFn(err);
+              if (res instanceof Promise) {
+                reject.then(
+                  (v) => {
+                    resolve(v);
+                  },
+                  (e) => {
+                    reject(e);
+                  }
+                );
+              } else {
+                resolve(res);
+              }
+            } catch (e) {
+              reject(e);
+            }
+          };
+        }
+      }
+      if (this._state === "rejected") {
+        if (typeof catchFn === "function") {
+          try {
+            const res = catchFn(this._error);
+            if (res instanceof Promise) {
+              reject.then(
+                (v) => {
+                  resolve(v);
+                },
+                (e) => {
+                  reject(e);
+                }
+              );
+            } else {
+              resolve(res);
+            }
+          } catch (e) {
+            reject(e);
+          }
+        } else {
+          resolve(this._value);
+        }
+      }
+      if (this._state === "fulfilled") {
+        resolve(this._value);
+      }
+    });
   }
-
-  all() {
-
-  }
-
-  race() {
-
-  }
-
 }
 
-module.exports = Promise
+Promise.resolve = function (v) {
+  return new Promise((r) => {
+    r(v);
+  });
+};
+Promise.reject = function (v) {
+  return new Promise((_, r) => {
+    r(v);
+  });
+};
+
+Promise.all1 = function (args) {
+  if (!args.length) return Promise.resolve();
+  let resolvedCount = 0;
+  if (args.every((p) => !(p instanceof Promise))) {
+    return Promise.resolve(args);
+  }
+  const res = new Array(args.length);
+  return new Promise((resolve, reject) => {
+    for (let i = 0; i < args.length; i++) {
+      let p = args[i];
+      if (!(p instanceof Promise)) {
+        p = Promise.resolve(args[i]);
+      }
+      p.then((v) => {
+        res[i] = v;
+        resolvedCount++;
+        if (resolvedCount === args.length) {
+          resolve(res);
+        }
+      }).catch((e) => {
+        reject(e);
+      });
+    }
+  });
+};
+
+
+Promise.any1 = function (args) {
+  return new Promise((resolve, reject) => {
+    if (args.length === 0) {
+      reject(new AggregateError("", "No Promise in Promise.any was resolved"));
+      return;
+    }
+    if (args.every((p) => !(p instanceof Promise))) {
+      resolve(args[0]);
+      return;
+    }
+    let isResolved = false;
+    let rejectCount = 0;
+    for (let p of args) {
+      p.then((v) => {
+        if (!isResolved) {
+          resolve(v);
+        }
+      }).catch(() => {
+        rejectCount++;
+        if (rejectCount === args.length) {
+          reject(
+            new AggregateError("", "No Promise in Promise.any was resolved")
+          );
+        }
+      });
+    }
+  });
+};
+
+
+Promise.allSettled1 = function (args) {
+  return new Promise((resolve) => {
+    if (args.length === 0) {
+      resolve([]);
+      return;
+    }
+    const res = [];
+    let count = 0;
+    for (let i = 0; i < args.length; i++) {
+      let p = args[i];
+      if (!(p instanceof Promise)) {
+        p = Promise.resolve(args[i]);
+      }
+      p.then((v) => {
+        res[i] = v;
+      })
+        .catch((e) => {
+          res[i] = e;
+        })
+        .finally(() => {
+          count++;
+          if (count === args.length) {
+            resolve(res);
+          }
+        });
+    }
+  });
+};
+
+
+Promise.race1 = function (args) {
+  return new Promise((resolve, reject) => {
+    let flag = false;
+    const temp = args.find((p) => !(p instanceof Promise));
+    if (temp) {
+      resolve(temp);
+      return;
+    }
+    for (let i = 0; i < args.length; i++) {
+      let p = args[i];
+      if (!(p instanceof Promise)) {
+        p = Promise.resolve(args[i]);
+      }
+      p.then((v) => {
+        if (!flag) {
+          resolve(v);
+        }
+      }).catch((e) => {
+        if (!flag) {
+          reject(e);
+        }
+      });
+    }
+  });
+};
