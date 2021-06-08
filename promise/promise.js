@@ -2,13 +2,12 @@
 class Promise {
   constructor(executor) {
     this._state = "pending";
-    this._next = undefined;
-    this._value = undefined;
-    this._error = undefined;
-    this._resolveCallback = undefined;
-    this._rejectCallback = undefined;
-    this._catchCallback = undefined;
-    this._finallyCallback = undefined;
+    // this._value = undefined;
+    // this._error = undefined;
+    // this._resolveCallback = undefined;
+    // this._rejectCallback = undefined;
+    // this._catchCallback = undefined;
+    // this._finallyCallback = undefined;
     if (typeof executor !== "function") {
       throw new Error("executor is not a function");
     }
@@ -40,8 +39,8 @@ class Promise {
   then(onResolve, onReject) {
     return new Promise((resolve, reject) => {
       if (this._state === "pending") {
-        if (typeof onResolve === "function") {
-          this._resolveCallback = (value) => {
+        this._resolveCallback = (value) => {
+          if (typeof onResolve === "function") {
             try {
               const res = onResolve(value);
               if (res instanceof Promise) {
@@ -53,16 +52,35 @@ class Promise {
                     reject(e);
                   }
                 );
+              } else if (typeof res === 'object' || typeof res === 'function') {
+                const then = res.then;
+                if (typeof then === 'function') {
+                  let promise = {};
+                  promise = new Promise((a, b) => {
+                    promise.resolve = a;
+                    promise.reject = b;
+                  });
+                  promise.then(v => {
+                    resolve(v);
+                  }, e => {
+                    reject(e);
+                  });
+                  then.call(promise, promise.resolve.bind(promise), promise.reject.bind(promise));
+                } else {
+                  resolve(res);
+                }
               } else {
                 resolve(res);
               }
             } catch (e) {
               reject(e);
             }
-          };
-        }
-        if (typeof onReject === "function") {
-          this._rejectCallback = (err) => {
+          } else {
+            resolve(value);
+          }
+        };
+        this._rejectCallback = (err) => {
+          if (typeof onReject === "function") {
             try {
               const res = onReject(err);
               if (res instanceof Promise) {
@@ -80,58 +98,79 @@ class Promise {
             } catch (e) {
               reject(e);
             }
-          };
-        } else {
-          reject(this._error);
-        }
+          } else {
+            reject(err);
+          }
+        };
       }
       if (this._state === "fulfilled") {
-        if (typeof onResolve === "function") {
+        queueMicrotask(() => {
           try {
-            const res = onResolve(this._value);
-            if (res instanceof Promise) {
-              // 返回实例是 promise，等待这个 promise
-              res.then(
-                (v) => {
-                  resolve(v);
-                },
-                (e) => {
-                  reject(e);
+            if (typeof onResolve === "function") {
+              const res = onResolve(this._value);
+              if (res instanceof Promise) {
+                // 返回实例是 promise，等待这个 promise
+                res.then(
+                  (v) => {
+                    resolve(v);
+                  },
+                  (e) => {
+                    reject(e);
+                  }
+                );
+              } else if (typeof res === 'object' || typeof res === 'function') {
+                const then = res.then;
+                if (then) {
+                  let promise = {};
+                  promise = new Promise((a, b) => {
+                    promise.resolve = a;
+                    promise.reject = b;
+                  });
+                  promise.then(v => {
+                    resolve(v);
+                  }, e => {
+                    reject(e);
+                  });
+                  then.call(promise, promise.resolve.bind(promise), promise.reject.bind(promise));
+                } else {
+                  resolve(res);
                 }
-              );
+              } else {
+                resolve(res);
+              }
             } else {
-              resolve(res);
+              resolve(this._value);
             }
           } catch (e) {
             reject(e);
           }
-        } else {
-          resolve(this._value);
-        }
+        });
       }
       if (this._state === "rejected") {
-        if (typeof onReject === "function") {
+        queueMicrotask(() => {
           try {
-            const res = onReject(this._error);
-            if (res instanceof Promise) {
-              res.then(
-                (v) => {
-                  resolve(v);
-                },
-                (e) => {
-                  resolve(e);
-                }
-              );
+            if (typeof onReject === "function") {
+              const res = onReject(this._error);
+              if (res instanceof Promise) {
+                res.then(
+                  (v) => {
+                    resolve(v);
+                  },
+                  (e) => {
+                    reject(e);
+                  }
+                );
+              } else {
+                resolve(res);
+              }
             } else {
-              resolve(res);
+              // 没有传 onReject 函数就继续
+              reject(this._error);
             }
           } catch (e) {
             reject(e);
           }
-        } else {
-          // 没有传 onReject 函数就继续
-          reject(this._error);
-        }
+        });
       }
     });
   }
@@ -363,3 +402,14 @@ Promise.race1 = function (args) {
     }
   });
 };
+
+Promise.defer = Promise.deferred = function () {
+  let dfd = {};
+  dfd.promise = new Promise((resolve, reject) => {
+      dfd.resolve = resolve;
+      dfd.reject = reject;
+  });
+  return dfd;
+}
+
+module.exports = Promise;
