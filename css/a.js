@@ -58,18 +58,31 @@ function testCallingResolvePromiseFulfillsWith(yFactory, stringRepresentation, f
 });
 }
 
+
 describe("`y` is a thenable", function () {
 
     describe("`y` is " + stringRepresentation, function () {
       describe("`then` calls `resolvePromise` synchronously", function () {
         var sentinel = { sentinel: 23 }
+        // function yFactory() {
+        //     return {
+        //       then: function (onFulfilled) {
+        //         onFulfilled(sentinel);
+        //       } 
+        //     };
+        // }
         function yFactory() {
-            return {
-              then: function (onFulfilled) {
-                onFulfilled(sentinel);
-              } 
-            };
-        }
+          function fn(reason) {
+              return Object.create(null, {
+                  then: {
+                      get: function () {
+                          throw reason;
+                      }
+                  }
+              }); 
+          }
+          return fn(sentinel);
+      }
         function xFactory() {
             return {
                 then: function (resolvePromise) {
@@ -117,19 +130,16 @@ promise2.then(null, function onPromise2Rejected(actualReason) {
 });
 
 // 
-function testReason(expectedReason, stringRepresentation) {
-  describe("The reason is " + stringRepresentation, function () {
-    testFulfilled(dummy, function (promise1, done) {
-        var reason = { then: () => {} };
-          var promise2 = new Promise((r) => r()).then(function onFulfilled() {
-              throw reason;
-          });
+  var reason = { then: () => {} };
+    var promise2 = new Promise((r) => r()).then(function onFulfilled() {
+        throw reason;
+    });
 
-          promise2.then(null, function onPromise2Rejected(actualReason) {
-              // assert.strictEqual(actualReason, expectedReason);
-              console.log(reason === actualReason);
-          });
-      });
+    promise2.then(null, function onPromise2Rejected(actualReason) {
+        // assert.strictEqual(actualReason, expectedReason);
+        console.log(reason === actualReason);
+    });
+
       testRejected(dummy, function (promise1, done) {
           var promise2 = promise1.then(null, function onRejected() {
               throw expectedReason;
@@ -140,9 +150,68 @@ function testReason(expectedReason, stringRepresentation) {
               done();
           });
       });
-  });
-}
 
 Object.keys(reasons).forEach(function (stringRepresentation) {
   testReason(reasons[stringRepresentation](), stringRepresentation);
+});
+
+function xFactory() {
+  var x = {
+      then: function (onFulfilled, onRejected) {
+          console.log(this);
+          onFulfilled();
+      }
+  };
+  return x;
+}
+new Promise((r,g) => r(1)).then(() => {
+  return xFactory();
+}).then(v => {
+  console.log(v)
+})
+
+// 2.2.6.1 expect 1 1 1 
+// p = new Promise((r,g) => setTimeout(() => r(1)));
+// p.then(r => {console.log(r)});
+// p.then(r => {console.log(r)});
+// p.then(r => {console.log(r)});
+
+// 2.2.6.1 expect true true
+// p2 = new Promise((r,g) => setTimeout(() => r(1)));
+// p2.then(function () {
+//   return 2;
+// }).then(function (v) {
+//   console.log(v === 2);
+// });
+// p2.then(function () {
+//   throw 3;
+// }).then(null, function (v) {
+//   console.log(v === 3);
+// });
+// p2.then(function () {
+//   return 4;
+// }).then(function (v) {
+//   console.log(v === 4);
+// });
+
+var sentinel = { sentinel: "sentinel" }; // a sentinel fulfillment value to test for with strict equality
+var sentinel2 = { sentinel2: "sentinel2" };
+var sentinel3 = { sentinel3: "sentinel3" };
+
+p3 = new Promise((r,g) => setTimeout(() => g(1)));
+p3.then(null, function () {
+  return sentinel;
+}).then(function (v) {
+  console.log(v, v === sentinel);
+});
+p3.then(null, function () {
+  throw sentinel2;
+}).then(null, function (v) {
+  console.log(v, v === sentinel2)
+});
+
+p3.then(null, function () {
+  return sentinel3;
+}).then(function (v) {
+  console.log(v, v === sentinel3)
 });
