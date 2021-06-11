@@ -1,82 +1,148 @@
 # Promise
 
-promise 是一种异步编程范式，遵循 promiseA+ 规范
+Promise 是遵循 [promiseA+规范]('https://promisesaplus.com/')的异步编程范式，其最大的特点链式调用的写法，避免了回调地狱的嵌套噩梦。
 
-## 手写 promise
+## 手写 promise 思路
 
 大致的思路如下，由简入繁：
 
 1. 实现 Promise 的同步 resolve 时的情况
 2. 链式调用
-3. then 方法返回 promise 实例时，需要转换控制权
+3. 异步
 4. 值穿透，当没有传入函数时，会穿透到下一个 then
-5. 异步
+5. then 方法返回 thenable 对象时，转移控制权
 6. catch
 7. finally
 
-手写 promise 的关键在于 then 方法的处理，以下为 promise 的一个最简单的雏形，只是覆盖了同步 resolve 的情况，虽然只有 70 行代码，但已经表达出了 promise 的核心思路。
+### 简单版
+
+手写 promise 的关键在于 then 方法的处理，以下为 promise 的一个简单的雏形，已经表达出了手写 promise 的核心思路。
 
 ```js
-class Promise1 {
+class Promise {
   constructor(exector) {
     this._state = 'pending';
     this._value = undefined;
     this._error = undefined;
+    this._resolveCallback = [];
+    this._rejectCallback = [];
     if (typeof exector === 'function') {
       exector(this.resolve.bind(this), this.reject.bind(this));
     }
   }
   resolve(v) {
-    if (this._state === 'pending') {
+    if (this._state === "pending") {
+      if (v !== null && (typeof v === 'object' || typeof v === 'function')) {
+        // resolve thenable 对象，控制权接管
+        try {
+          const then = v.then;
+          if (typeof then === 'function') {
+            let promise = {};
+            promise = new Promise((resolve, reject) => {
+              promise.resolve = resolve;
+              promise.reject = reject;
+            });
+            promise.then(value => {
+              this.resolve(value);
+            }, err => {
+              this.reject(err);
+            });
+            // 2.3.3.3 调用 then 时的 this 需要指向对象本身
+            then.call(v, a => {
+              promise.resolve(a);
+            }, b => {
+              promise.reject(b);
+            });
+            return;
+          }
+        } catch (e) {
+          this.reject(e);
+          return;
+        }
+      }
       this._value = v;
-      this._state = 'fulfilled';
+      this._state = "fulfilled";
+      this._resolveCallback.forEach(callback => {
+        queueMicrotask(() => {
+          callback(this._value);
+        });
+      });
     }
   }
   reject(v) {
     if (this._state === 'pending') {
       this._error = v;
       this._state = 'rejected';
+      // ...
     }
   }
   then(onResolve, onReject) {
-    return new Promise1((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       // 同步 resolve
       if (this._state === 'fulfilled') {
-        if (typeof onResolve === 'function') {
-          try {
-            const res = onResolve(this._value);
-            if (res instanceof Promise1) {
-              // 如果返回的是 promise，控制权交给这个 promise，等待这个 promise
-              res.then((v) => {
-                resolve(v);
-              }, (e) => {
-                reject(e);
-              })
-            } else {
-              // 不是的话就将返回值传给下一个
+        // 推入微任务队列执行
+        queueMicroTask(() => {
+          if (typeof onResolve === 'function') {
+            try {
+              const res = onResolve(this._value);
               resolve(res);
+            } catch(e) {
+              // 调用 onResolve 出现错误
+              reject(e);
             }
-          } catch(e) {
-            // 调用 onResolve 出现错误
-            reject(e);
+          } else {
+            // 没有传入 onResolve 函数，值穿透
+            resolve(this._value);
           }
-        } else {
-          // 没有传入 onResolve 函数，值穿透
-          resolve(this._value);
-        }
+        });
       }
       if (this._state === 'rejected') {
-        // 同步 reject
+        // ...
       }
       if (this._state === 'pending') {
-        // 异步，将 onResolve/onReject 存起来
+        // 异步，需要将 onResolve/onReject 存起来
+        this._resolveCallback.push((value) => {
+          if (typeof onResolve === "function") {
+            try {
+              const res = onResolve(value);
+              resolve(res);
+            } catch (e) {
+              reject(e);
+            }
+          } else {
+            resolve(value);
+          }
+        });
+        // ...
       }
     });
   }
 }
 ```
 
-完整版可以参考[这里]('https://github.com/Leonewu/daily/blob/master/promise/promise.js')
+### 完整版
+
+完整版在文末或者点击 [这里]('https://github.com/Leonewu/daily/blob/master/promise/promise.js')
+
+### 单元测试
+
+1. 安装测试套件 [promises-aplus-tests]('https://github.com/promises-aplus/promises-tests')，一共 872 条测试用例。
+`npm install promises-aplus-tests -D`
+2. 使用 commonJs 的语法导出 Promise，并且添加以下代码
+
+      ```js
+      Promise.defer = Promise.deferred = function () {
+        let dfd = {};
+        dfd.promise = new Promise((resolve, reject) => {
+          dfd.resolve = resolve;
+          dfd.reject = reject;
+        });
+        return dfd;
+      }
+      ```
+
+3. 运行测试用例  
+`npx promises-aplus-tests ./your-promise.js`
 
 ### Q & A
 
@@ -300,3 +366,374 @@ Promise.race1 = function (args) {
   });
 };
 ```
+
+## 完整版
+
+```js
+
+class Promise {
+  constructor(executor) {
+    this._state = "pending";
+    this._value = undefined;
+    this._error = undefined;
+    this._resolveCallback = [];
+    this._rejectCallback = [];
+    this._catchCallback = undefined;
+    this._finallyCallback = undefined;
+    if (typeof executor !== "function") {
+      throw new Error("executor is not a function");
+    }
+    executor(this.resolve.bind(this), this.reject.bind(this));
+  }
+  resolve(v) {
+    if (this === v) {
+      throw new TypeError('refer to the same promise');
+    }
+    if (this._state === "pending") {
+      if (v !== null && (typeof v === 'object' || typeof v === 'function')) {
+        let used = false;
+        try {
+          // thenable 接管控制权
+          const then = v.then;
+          if (typeof then === 'function') {
+            let promise = {};
+            promise = new Promise((resolve, reject) => {
+              promise.resolve = resolve;
+              promise.reject = reject;
+            });
+            promise.then(value => {
+              this.resolve(value);
+            }, err => {
+              this.reject(err);
+            });
+            // 2.3.3.3 调用 then 时的 this 需要指向对象本身
+            then.call(v, a => {
+              // 2.3.3.3.1
+              // 如果 thenable 嵌套了 thenable
+              // 如以下代码，正确输出值是 innervalue
+              /* 
+                {
+                  then: (fulfill1) => {
+                    fulfill1({
+                      then: (fulfill2) => {
+                        fulfill2('innervalue');
+                        fulfill2('innervalue2');
+                      }
+                    });
+                    fulfill1('outervalue');
+                  }
+                }
+              */
+              // 最外层两个 fulfill 是同步执行
+              // 外层第一个 fulfill 控制权转移了，由于 promise.then 是微任务执行
+              // 所以外层第二个 fulfill 马上就把值 resolve 掉了
+              if (used) return;
+              used = true;
+              promise.resolve(a);
+            }, b => {
+              if (used) return;
+              used = true;
+              promise.reject(b);
+            });
+            return;
+          }
+        } catch (e) {
+          if (!used) {
+            this.reject(e);
+          }
+          return;
+        }
+      }
+      this._value = v;
+      this._state = "fulfilled";
+      this._resolveCallback.forEach(callback => {
+        queueMicrotask(() => {
+          callback(this._value);
+        });
+      });
+    }
+  }
+  reject(e) {
+    if (this._state === "pending") {
+      this._error = e;
+      this._state = "rejected";
+      if (this._rejectCallback.length) {
+        this._rejectCallback.forEach(callback => {
+          queueMicrotask(() => {
+            callback(this._error);
+          });
+        });
+      } else if (this._catchCallback) {
+        queueMicrotask(() => {
+          this._catchCallback(this._error);
+        });
+      }
+    }
+  }
+  then(onResolve, onReject) {
+    return new Promise((resolve, reject) => {
+      if (this._state === "pending") {
+        this._resolveCallback.push((value) => {
+          if (typeof onResolve === "function") {
+            try {
+              const res = onResolve(value);
+              resolve(res);
+            } catch (e) {
+              reject(e);
+            }
+          } else {
+            resolve(value);
+          }
+        });
+        this._rejectCallback.push((err) => {
+          if (typeof onReject === "function") {
+            try {
+              const res = onReject(err);
+              resolve(res);
+            } catch (e) {
+              reject(e);
+            }
+          } else {
+            reject(err);
+          }
+        });
+      }
+      if (this._state === "fulfilled") {
+        queueMicrotask(() => {
+          try {
+            if (typeof onResolve === "function") {
+              const res = onResolve(this._value);
+              resolve(res);
+            } else {
+              resolve(this._value);
+            }
+          } catch (e) {
+            reject(e);
+          }
+        });
+      }
+      if (this._state === "rejected") {
+        queueMicrotask(() => {
+          try {
+            if (typeof onReject === "function") {
+              const res = onReject(this._error);
+              resolve(res);
+            } else {
+              // 没有传 onReject 函数就继续
+              reject(this._error);
+            }
+          } catch (e) {
+            reject(e);
+          }
+        });
+      }
+    });
+  }
+  finally(finallyFn) {
+    return new Promise((resolve, reject) => {
+      if (this._state === "pending") {
+        if (typeof finallyFn === "function") {
+          this._finallyCallback = () => {
+            try {
+              const res = finallyFn();
+              resolve(res);
+            } catch (e) {
+              reject(e);
+            }
+          };
+        }
+      }
+      if (["fulfilled", "rejected"].includes(this._state)) {
+        queueMicrotask(() => {
+          if (typeof finallyFn === "function") {
+            try {
+              const res = finallyFn();
+              resolve(res);
+            } catch (e) {
+              reject(e);
+            }
+          } else {
+            resolve(this._value);
+          }
+        });
+      }
+    });
+  }
+  catch(catchFn) {
+    return new Promise((resolve, reject) => {
+      if (this._state === "pending") {
+        if (typeof catchFn === "function") {
+          this._catchCallback = (err) => {
+            try {
+              const res = catchFn(err);
+              resolve(res);
+            } catch (e) {
+              reject(e);
+            }
+          };
+        }
+      }
+      if (this._state === "rejected") {
+        queueMicrotask(() => {
+          if (typeof catchFn === "function") {
+            try {
+              const res = catchFn(this._error);
+              resolve(res);
+            } catch (e) {
+              reject(e);
+            }
+          } else {
+            resolve(this._value);
+          }
+        });
+      }
+      if (this._state === "fulfilled") {
+        resolve(this._value);
+      }
+    });
+  }
+}
+
+
+
+Promise.resolve = function (v) {
+  return new Promise((r) => {
+    r(v);
+  });
+};
+Promise.reject = function (v) {
+  return new Promise((_, r) => {
+    r(v);
+  });
+};
+
+Promise.all = function (args) {
+  if (!args.length) return Promise.resolve();
+  let resolvedCount = 0;
+  if (args.every((p) => !(p instanceof Promise))) {
+    return Promise.resolve(args);
+  }
+  const res = new Array(args.length);
+  return new Promise((resolve, reject) => {
+    for (let i = 0; i < args.length; i++) {
+      let p = args[i];
+      if (!(p instanceof Promise)) {
+        p = Promise.resolve(args[i]);
+      }
+      p.then((v) => {
+        res[i] = v;
+        resolvedCount++;
+        if (resolvedCount === args.length) {
+          resolve(res);
+        }
+      }).catch((e) => {
+        reject(e);
+      });
+    }
+  });
+};
+
+
+Promise.any = function (args) {
+  return new Promise((resolve, reject) => {
+    if (args.length === 0) {
+      reject(new AggregateError("", "No Promise in Promise.any was resolved"));
+      return;
+    }
+    if (args.every((p) => !(p instanceof Promise))) {
+      resolve(args[0]);
+      return;
+    }
+    let isResolved = false;
+    let rejectCount = 0;
+    for (let p of args) {
+      p.then((v) => {
+        if (!isResolved) {
+          resolve(v);
+        }
+      }).catch(() => {
+        rejectCount++;
+        if (rejectCount === args.length) {
+          reject(
+            new AggregateError("", "No Promise in Promise.any was resolved")
+          );
+        }
+      });
+    }
+  });
+};
+
+
+Promise.allSettled = function (args) {
+  return new Promise((resolve) => {
+    if (args.length === 0) {
+      resolve([]);
+      return;
+    }
+    const res = [];
+    let count = 0;
+    for (let i = 0; i < args.length; i++) {
+      let p = args[i];
+      if (!(p instanceof Promise)) {
+        p = Promise.resolve(args[i]);
+      }
+      p.then((v) => {
+        res[i] = v;
+      })
+        .catch((e) => {
+          res[i] = e;
+        })
+        .finally(() => {
+          count++;
+          if (count === args.length) {
+            resolve(res);
+          }
+        });
+    }
+  });
+};
+
+
+Promise.race = function (args) {
+  return new Promise((resolve, reject) => {
+    let flag = false;
+    const temp = args.find((p) => !(p instanceof Promise));
+    if (temp) {
+      resolve(temp);
+      return;
+    }
+    for (let i = 0; i < args.length; i++) {
+      let p = args[i];
+      if (!(p instanceof Promise)) {
+        p = Promise.resolve(args[i]);
+      }
+      p.then((v) => {
+        if (!flag) {
+          resolve(v);
+        }
+      }).catch((e) => {
+        if (!flag) {
+          reject(e);
+        }
+      });
+    }
+  });
+};
+
+// for promises-aplus-tests
+Promise.defer = Promise.deferred = function () {
+  let dfd = {};
+  dfd.promise = new Promise((resolve, reject) => {
+    dfd.resolve = resolve;
+    dfd.reject = reject;
+  });
+  return dfd;
+}
+
+module.exports = Promise;
+```
+
+## 参考
+
+- [Promises/A+]('https://promisesaplus.com/')
+- [Promises/A+ Compliance Test Suite]('https://github.com/promises-aplus/promises-tests')
