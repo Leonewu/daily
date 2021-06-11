@@ -1,0 +1,71 @@
+@keyframes fade {
+  from {
+    background-color: transparent;
+  }
+  to {
+    background-color: rgba(0, 0, 0, 0.6);
+  }
+}
+
+@keyframes zoom {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+// 庆祝弹窗
+.mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  animation: fade 1s cubic-bezier(0.075, 0.82, 0.165, 1);
+}
+.content {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: auto;
+  outline: 0;
+  animation: zoom 0.3s cubic-bezier(0.075, 0.82, 0.165, 1);
+  pointer-events: none;
+}
+.main {
+  position: relative;
+  width: 840px;
+  height: 589px;
+  margin-bottom: 19px;
+  background-image: url('./celebration.png');
+  background-size: cover;
+}
+.num {
+  position: absolute;
+  bottom: 118px;
+  width: 100%;
+  height: 120px;
+  color: #ff5b32;
+  font-weight: bold;
+  font-family: xiaonum;
+  line-height: 120px;
+  text-align: center;
+}
+.close {
+  width: 60px;
+  height: 60px;
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+}

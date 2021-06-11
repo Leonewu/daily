@@ -1,18 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Carousel } from 'antd';
-import { useInterval } from '../hooks/useInterval';
+import { useInterval } from '../../hooks/useInterval';
 import styles from './index.less';
 
 /* XXX table-layout: fixed 即不用默认布局算法渲染（列宽会取内容宽度最大的宽度），默认为 auto */
-/**
- * @description 轮播效果的翻页表格
- * @description react-slick 没有异步滚动的接口
- * @question 为什么不仿照 antd table 使用 props.dataSource 做为渲染数据源？
-    因为 props.dataSource 变化引起的更新无法控制，而轮播的滚动是有一定时间的
-    这种情况下使得动画和数据更新无法完美地控制顺序
-    需要兼顾表格的翻页数据的实时准确性和滚动体验
-  * @notice 默认会调用 fetchList 初始化第一页数据
-*/
 
 export type ColumnType = {
   title?: string;
@@ -20,6 +11,7 @@ export type ColumnType = {
   render?: (text: string | number, row: any, index: number) => React.ReactNode;
   width?: string;
   key?: React.Key;
+  align?: 'left' | 'center' | 'right';
 };
 
 export type FetchListType = (
@@ -37,16 +29,32 @@ export interface TablePropsType {
   pagination?: PaginationType;
   columns: ColumnType[];
   style?: React.CSSProperties;
-  loading?: boolean;
   rowKey?: React.Key | ((row: any, index: number) => React.Key);
   /** 获取数据的 Promise，需要返回 list 和 total */
   fetchList?: FetchListType;
   /** 是否自动播放，自动播放时，手动点击切换页码会禁用 */
   autoplay?: boolean;
+  className?: string;
 }
 
-const CarouselTable: React.FC<TablePropsType> = (props) => {
-  const { columns, pagination: propsPagination, fetchList, autoplay, rowKey, style = {} } = props;
+/**
+ * @description 轮播效果的翻页表格(对齐 antd-table 的参数)
+ * @description 背景：react-slick 没有异步滚动的接口，所以在 react-slick 的基础上分装
+ * @notice 默认会调用 fetchList 初始化第一页数据，需要传 fetchList 函数
+ * @QandA Q: 为什么不仿照 antd table 使用 props.dataSource 做为渲染数据源？
+          A: 因为 props.dataSource 变化引起的更新无法精确的定位，我们需要在请求数据之后滚动到下一屏。
+             传入 fetchList 函数能控制动画和数据更新的顺序
+*/
+const CarouselTable: React.FC<TablePropsType> = React.memo((props) => {
+  const {
+    columns,
+    pagination: propsPagination,
+    fetchList,
+    autoplay,
+    rowKey,
+    style = {},
+    className = '',
+  } = props;
   const defaultPagination = {
     pageSize: 10,
     total: 0,
@@ -57,6 +65,7 @@ const CarouselTable: React.FC<TablePropsType> = (props) => {
   const [list, setList] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const carouselRef = useRef<any>(null);
+  const [loading, setLoading] = useState(false);
   const totalPage = useMemo(() => {
     return Math.ceil((total || list.length) / pagination.pageSize);
   }, [total, pagination.pageSize, list]);
@@ -64,22 +73,25 @@ const CarouselTable: React.FC<TablePropsType> = (props) => {
   const srollTo = (page: number) => {
     // 滚动到第几页 page 从 1 开始
     // FIXME: 默认第二页时，手动点击第一页动画效果不流畅
-    setTimeout(() => {
-      setCurrent(page);
-      if (current === totalPage && page === 1) {
-        carouselRef.current?.next();
-      } else {
-        carouselRef.current?.goTo(page - 1);
-      }
-    }, 400);
+    // setTimeout(() => {
+    setCurrent(page);
+    if (current === totalPage && page === 1) {
+      carouselRef.current?.next();
+    } else {
+      carouselRef.current?.goTo(page - 1);
+    }
+    // }, 400);
   };
 
   const fetchAndGoto = async (page: number) => {
+    if (loading) return;
+    // 获取数据并滚动，page 从 1 开始
     if (page > totalPage) return;
     // 如果不是自动播放，页码一样就不需要请求
     // 如果是自动播放，页码一样时要请求数据，因为要实时刷新本页数据
     if (!autoplay && current === page) return;
     try {
+      setLoading(true);
       const res = await fetchList?.({ ...pagination, current: page });
       const tempList = [...list];
       const newList = res?.list || [];
@@ -89,6 +101,8 @@ const CarouselTable: React.FC<TablePropsType> = (props) => {
       srollTo(page);
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,10 +128,9 @@ const CarouselTable: React.FC<TablePropsType> = (props) => {
     } else {
       fetchAndGoto(1);
     }
-  }, 5000);
+  }, 10000);
 
   useEffect(() => {
-    // TODO 兼容异步 init 的情况
     init();
   }, []);
 
@@ -160,17 +173,17 @@ const CarouselTable: React.FC<TablePropsType> = (props) => {
               ) {
                 title = content;
               }
+              const columnStyle: React.CSSProperties = {
+                height: 48,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              };
+              if (column.align) {
+                columnStyle.textAlign = column.align;
+              }
               return (
-                <td
-                  key={columnKey}
-                  style={{
-                    height: 48,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                  title={title}
-                >
+                <td key={columnKey} style={columnStyle} title={title}>
                   {content}
                 </td>
               );
@@ -198,7 +211,7 @@ const CarouselTable: React.FC<TablePropsType> = (props) => {
     });
     return (
       <>
-        <Carousel ref={carouselRef} dots={false}>
+        <Carousel ref={carouselRef} dots={false} swipe={false}>
           {items}
         </Carousel>
         <ul className={styles.dots}>
@@ -209,8 +222,17 @@ const CarouselTable: React.FC<TablePropsType> = (props) => {
                 // eslint-disable-next-line react/no-array-index-key
                 key={i}
                 onClick={() => {
-                  if (autoplay) return;
-                  fetchAndGoto(i + 1);
+                  // if (autoplay) return;
+                  if (i + 1 === current) return;
+                  if (autoplay) {
+                    // 正在自动播放先停止，再播放
+                    clear();
+                    fetchAndGoto(i + 1).finally(() => {
+                      start();
+                    });
+                  } else {
+                    fetchAndGoto(i + 1);
+                  }
                 }}
               >
                 <i />
@@ -223,32 +245,38 @@ const CarouselTable: React.FC<TablePropsType> = (props) => {
   };
 
   return (
-    <div style={{ paddingBottom: 20 }}>
-      <div className={styles.carouselTable} style={style}>
-        <table className={styles.headTable}>
-          <colgroup>
+    <div className={`${className} ${styles.carouselTable}`} style={style}>
+      <table className={styles.headTable}>
+        <colgroup>
+          {columns.map((column, columnIndex) => {
+            const columnKey = column.key ?? column.dataIndex ?? columnIndex;
+            const colStyle: React.CSSProperties = {};
+            if (column.width) {
+              colStyle.width = column.width;
+            }
+            return <col key={columnKey} style={colStyle} />;
+          })}
+        </colgroup>
+        <thead>
+          <tr>
             {columns.map((column, columnIndex) => {
               const columnKey = column.key ?? column.dataIndex ?? columnIndex;
-              const colStyle: React.CSSProperties = {};
-              if (column.width) {
-                colStyle.width = column.width;
+              const columnStyle: React.CSSProperties = {};
+              if (column.align) {
+                columnStyle.textAlign = column.align;
               }
-              return <col key={columnKey} style={colStyle} />;
+              return (
+                <th key={columnKey} style={columnStyle}>
+                  {column.title}
+                </th>
+              );
             })}
-          </colgroup>
-          <thead>
-            <tr>
-              {columns.map((column, columnIndex) => {
-                const columnKey = column.key ?? column.dataIndex ?? columnIndex;
-                return <th key={columnKey}>{column.title}</th>;
-              })}
-            </tr>
-          </thead>
-        </table>
-        {renderCarousel()}
-      </div>
+          </tr>
+        </thead>
+      </table>
+      {renderCarousel()}
     </div>
   );
-};
+});
 
-export default React.memo(CarouselTable);
+export default CarouselTable;

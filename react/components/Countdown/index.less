@@ -1,0 +1,85 @@
+.countdown {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 12px 24px;
+  color: #fff;
+  & > span {
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 60px;
+  }
+}
+
+.colon {
+  position: relative;
+  width: 22px;
+  height: 60px;
+  font-weight: bold;
+  font-size: 48px;
+  font-family: xiaonum;
+  &::before {
+    position: absolute;
+    top: 19px;
+    left: 8px;
+    width: 6px;
+    height: 6px;
+    background: #fff;
+    content: '';
+  }
+  &::after {
+    position: absolute;
+    right: 8px;
+    bottom: 19px;
+    width: 6px;
+    height: 6px;
+    background: #fff;
+    content: '';
+  }
+}
+
+.number {
+  position: relative;
+  width: 51px;
+  height: 60px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 48px;
+  font-family: xiaonum;
+  line-height: 60px;
+  text-align: center;
+  border-radius: 2px;
+  &::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+    content: '';
+  }
+  &::after {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 100%);
+    content: '';
+  }
+  & + .number {
+    margin-left: 8px;
+  }
+}
+
+.day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 8px;
+  font-weight: 600;
+  font-size: 32px;
+}

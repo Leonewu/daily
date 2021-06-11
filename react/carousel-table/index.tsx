@@ -1,63 +1,59 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'umi';
+import { multiply } from '@/utils/utils';
 import moment from 'moment';
 import { message } from 'antd';
-import { pad, multiply } from '../../utils/utility';
-import bg from './images/perf_bg_1920.png';
+// import bg from '@/assets/sale/perf_bg_1920.png';
 import { useInterval } from '../hooks/useInterval';
-import CarouselTable, { FetchListType } from '../components/CarouselTable';
+import { useHideCursor, useMouseStop } from '../hooks/useHideCursor';
+import IconFont from '@/components/IconFont';
+import { useFullscreen } from 'ahooks';
 import styles from './index.less';
-import { usePerfData } from './models';
-import { consultantColumns, stationColumns } from './columns';
+import { usePerfData, useScrollList, useDominateData } from './models';
+import { Province, Station, Consultant } from './sections/table';
+import Celebration from './sections/celebration';
+import ScrollList from '../components/ScrollList';
+import CarouselList from '../components/CarouselList';
+import Countdown from '../components/Countdown';
 
-function getCountdown(
-  start: number,
-): { day: string; hour: string; minute: string; second: string } {
-  let seconds = start;
-  let day = 0;
-  let hour = 0;
-  let minute = 0;
-  let second = 0;
-  if (seconds > 3600 * 24) {
-    day = Math.floor(seconds / 3600 / 24);
-    seconds -= 3600 * 24 * day;
+function format(time: number = 0) {
+  const now = new Date().getTime() / 1000;
+  const distance = now - time;
+  if (distance < 60) {
+    return '刚刚';
   }
-  if (seconds > 3600) {
-    hour = Math.floor(seconds / 3600);
-    seconds -= 3600 * hour;
+  if (distance > 60 && distance < 3600) {
+    return `${Math.floor(distance / 60)}分钟前`;
   }
-  if (seconds > 60) {
-    minute = Math.floor(seconds / 60);
-    seconds -= 60 * minute;
-  }
-  second = seconds;
-  return {
-    day: pad(day, 2),
-    hour: pad(hour, 2),
-    minute: pad(minute, 2),
-    second: pad(second, 2),
-  };
+  return `${Math.floor(distance / 3600)}小时前`;
 }
 
 export default () => {
   const { overviewData, fetchOverviewData } = usePerfData();
+  const { fetchList } = useScrollList();
+  const { fetchDominateData } = useDominateData();
+  const {
+    show_status,
+    statistic_time = 0,
+    dominate_screen_begin_time = 0,
+    dominate_screen_end_time = 0,
+    carousel_begin_time = 0,
+    carousel_end_time = 0,
+    count_down_time = 0,
+    end_time = 0,
+    start_time = 0,
+    image_url = {},
+    product_count = 0,
+    target_count = 0,
+    finish_rate = 0,
+  } = overviewData || {};
+
   const perfId = (useParams() as { id: string }).id;
-  const [startSeconds, setStartSeconds] = useState(0);
-  const [startTime, setStartTime] = useState(0);
-  const countdown = useMemo(() => {
-    return getCountdown(startSeconds);
-  }, [startSeconds]);
-
-  // 倒计时
-  const [startCountdown, clearCountdown] = useInterval(() => {
-    if (startSeconds <= 0) {
-      clearCountdown();
-      fetchOverviewData({ performance_show_id: perfId });
-      return;
-    }
-    setStartSeconds(startSeconds - 1);
-  }, 1000);
-
+  const ref = useRef<any>();
+  const [isFullscreen, { toggleFull }] = useFullscreen(document.querySelector('html'));
+  const celebrationRef = useRef<any>();
+  useHideCursor(ref, 15000);
+  const [isStop] = useMouseStop(2000);
   // 接口轮询
   const [startPoll, clearPoll] = useInterval(
     () => {
@@ -65,21 +61,7 @@ export default () => {
         .then((res) => {
           if (res?.show_status === 4) {
             // 活动结束
-            clearCountdown();
             clearPoll();
-            return;
-          }
-          const now = new Date().getTime();
-          const distance = res?.start_time * 1000 - now;
-          if (res?.show_status !== 1 || !res?.start_time || distance < 0) {
-            clearCountdown();
-            return;
-          }
-          if (res?.start_time !== startTime) {
-            // 如果开始时间和本地缓存的不相等，就重新倒计时
-            setStartSeconds(Math.floor(distance / 1000));
-            startCountdown();
-            setStartTime(res?.start_time);
           }
         })
         .catch((err) => {
@@ -87,37 +69,41 @@ export default () => {
             const msg = err.err === 7845 ? err.msg : '获取业绩大屏数据失败';
             message.error(msg);
             clearPoll();
-            clearCountdown();
           }
         });
     },
-    5000,
+    7000,
     { immediate: true },
   );
 
   useEffect(() => {
     if (perfId) {
+      console.log(document.body.clientWidth);
+      console.log(window.screen.width);
+      console.log(window.screen.width);
       startPoll();
     }
     return () => {
-      clearCountdown();
       clearPoll();
     };
   }, [perfId]);
 
+  const WIDTH = 1920;
+  const HEIGHT = 1080;
+
   const autoplay = useMemo(() => {
-    return !!(overviewData.show_status && overviewData.show_status !== 4);
-  }, [overviewData.show_status]);
+    return !!(show_status && show_status !== 4);
+  }, [show_status]);
 
   const renderNotice = () => {
-    if (overviewData.show_status === 3) {
+    if (show_status === 3) {
       return <p className={styles.notice}>数据正在重新计算中，请稍等</p>;
     }
-    if (overviewData.statistic_time) {
+    if (statistic_time) {
       return (
         <p className={styles.notice}>
           数据更新时间：
-          {moment(Number(overviewData.statistic_time) * 1000).format('YYYY-MM-DD HH:mm:ss')}
+          {moment(Number(statistic_time) * 1000).format('YYYY-MM-DD HH:mm:ss')}
         </p>
       );
     }
@@ -128,163 +114,176 @@ export default () => {
     );
   };
 
-  return (
-    <div className={styles.preview} style={{ backgroundImage: `url(${overviewData?.image_url || bg})` }}>
-      <section className={styles.left}>
-        <Province
-          style={{ width: '466px', minHeight: '436px' }}
-          autoplay={autoplay}
-          perfId={perfId}
+  const renderCarouselList = () => {
+    const now = new Date().getTime() / 1000;
+    const showScrollList = carousel_begin_time < now && now < carousel_end_time;
+    // 延迟 6s 才显示霸屏，后端要计算
+    const showDominate =
+      dominate_screen_begin_time &&
+      dominate_screen_begin_time + 6 < now &&
+      now < dominate_screen_end_time;
+    if (showScrollList) {
+      if (showDominate) {
+        // 展示霸屏
+        const s = moment(Number(dominate_screen_begin_time) * 1000).format('HH:mm:ss');
+        const e = moment(Number(dominate_screen_end_time) * 1000).format('HH:mm:ss');
+        return (
+          <>
+            <img src={image_url.dominate_screen_image_url} />
+            <div className={styles.content}>
+              <div className={styles.carouselListWrapper}>
+                <header>
+                  {s} - {e}
+                </header>
+                <CarouselList
+                  autoplay
+                  className={styles.carouselList}
+                  fetchList={() => {
+                    return fetchDominateData({
+                      performance_show_id: perfId,
+                    });
+                  }}
+                />
+              </div>
+            </div>
+          </>
+        );
+      }
+      // 展示签单记录
+      return (
+        <>
+          <img src={image_url.record_image} />
+          <div className={styles.content}>
+            <ScrollList<any>
+              fetchList={(item) => {
+                return fetchList({
+                  performance_show_id: perfId,
+                  time_stamp: item.time_stamp || 0,
+                });
+              }}
+              itemHeight={48}
+              render={(item) => {
+                const time = format(item.time_stamp);
+                return (
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      width: '100%',
+                    }}
+                  >
+                    <span>
+                      {item.teacher_name}({item.station_name})：签单科次+{item.sign_num}
+                    </span>
+                    <span>{time}</span>
+                  </div>
+                );
+              }}
+              rowKey={(item) => `${item.order_id}-${item.teacher_id}`}
+            />
+          </div>
+        </>
+      );
+    }
+    return null;
+  };
+
+  const renderCountdown = () => {
+    const now = new Date().getTime() / 1000;
+    if (count_down_time > 0 && now > count_down_time && now < end_time) {
+      // 结束倒计时
+      return (
+        <Countdown
+          label="业绩冲刺倒计时："
+          deadline={end_time}
+          run={true}
+          onEnd={() => {
+            celebrationRef.current.show(product_count);
+          }}
         />
+      );
+    }
+    if (now < start_time) {
+      // 未开始
+      return <Countdown label="开始倒计时：" deadline={start_time} run={true} />;
+    }
+    return null;
+  };
+
+  const style = useMemo(() => {
+    const s = {
+      backgroundImage: `url(${image_url.background_image || ''})`,
+      '--width': `${WIDTH}px`,
+      '--height': `${HEIGHT}px`,
+    } as React.CSSProperties;
+    // if (true) {
+    //   s[
+    //     '--bg-image'
+    //   ] = `url(${'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAABcUlEQVR4Xu3VMQ0AIBDFUNCEfzHMOGAiQcUbegqaNj83z91rdIyBWRCmxQcpiNWjIFiPghREM4Dx9EMKghnAcFpIQTADGE4LKQhmAMNpIQXBDGA4LaQgmAEMp4UUBDOA4bSQgmAGMJwWUhDMAIbTQgqCGcBwWkhBMAMYTgspCGYAw2khBcEMYDgtpCCYAQynhRQEM4DhtJCCYAYwnBZSEMwAhtNCCoIZwHBaSEEwAxhOCykIZgDDaSEFwQxgOC2kIJgBDKeFFAQzgOG0kIJgBjCcFlIQzACG00IKghnAcFpIQTADGE4LKQhmAMNpIQXBDGA4LaQgmAEMp4UUBDOA4bSQgmAGMJwWUhDMAIbTQgqCGcBwWkhBMAMYTgspCGYAw2khBcEMYDgtpCCYAQynhRQEM4DhtJCCYAYwnBZSEMwAhtNCCoIZwHBaSEEwAxhOCykIZgDDaSEFwQxgOC2kIJgBDKeFFAQzgOG0kIJgBjCcBzHjKbhWveqyAAAAAElFTkSuQmCC'})`;
+    // }
+    if (image_url?.pattern_bottom_image) {
+      s['--bg-image'] = `url(${image_url.pattern_bottom_image})`;
+    }
+    if (window.screen.width !== WIDTH) {
+      // 屏幕不是指定宽度需要缩放
+      const scale =
+        window.screen.width > WIDTH
+          ? (WIDTH / window.screen.width).toFixed(5)
+          : (window.screen.width / WIDTH).toFixed(5);
+      s.transform = `scale(${scale})`;
+      s.transformOrigin = '0 0';
+    }
+    return s;
+  }, [image_url]);
+
+  return (
+    <div className={styles.preview} style={style} ref={ref}>
+      <Celebration ref={celebrationRef} />
+      <IconFont
+        onClick={toggleFull}
+        className={`${styles.fullScreen} ${!isStop && styles.show}`}
+        type={isFullscreen ? 'xhwxicon-quanping22-fill' : 'xhwxicon-quanping2-fill'}
+      />
+      <section
+        className={styles.left}
+        onClick={() => {
+          if (window.location.hash.slice(1)) {
+            celebrationRef.current.show(parseInt(window.location.hash.slice(1)) || target_count);
+          }
+        }}
+      >
+        <Province bg={image_url.province_order_image} autoplay={autoplay} perfId={perfId} />
         <div>
-          <Consultant
-            style={{ width: '466px', minHeight: '292px' }}
-            autoplay={autoplay}
-            perfId={perfId}
-          />
+          <Consultant bg={image_url.consultant_order_image} autoplay={autoplay} perfId={perfId} />
           {renderNotice()}
         </div>
       </section>
       <section className={styles.middle}>
-        {overviewData.show_status === 1 ? (
-          <>
-            <header>开始倒计时</header>
-            <div className={`${styles.countdown} ${countdown.day !== '00' && styles.showDay}`}>
-              {countdown.day !== '00' && (
-                <>
-                  <span>{countdown.day}</span>
-                  <span>天</span>
-                </>
-              )}
-              <span>{countdown.hour}</span>
-              <span>时</span>
-              <span>{countdown.minute}</span>
-              <span>分</span>
-              <span>{countdown.second}</span>
-              <span>秒</span>
-            </div>
-          </>
-        ) : (
-          <div className={styles.target}>
-            <div>
-              <header>签单科次</header>
-              <span>{overviewData.product_count?.toLocaleString()}</span>
-            </div>
-            <div>
-              <header>目标科次</header>
-              <span>{overviewData.target_count?.toLocaleString()}</span>
-            </div>
-            <div>
-              <header>完成率</header>
-              <span>{multiply(+(overviewData.finish_rate ?? 0), 100)}%</span>
-            </div>
-          </div>
-        )}
+        <img className={styles.middleBg} src={image_url.topic_image} />
+        <div className={styles.countdown}>{renderCountdown()}</div>
+        <ul
+          className={styles.target}
+          style={{ visibility: show_status === 1 ? 'hidden' : 'visible' }}
+        >
+          <li>
+            <span>{target_count?.toLocaleString()}</span>
+            <span>目标科次</span>
+          </li>
+          <li>
+            <span>{product_count?.toLocaleString()}</span>
+            <span>签单科次</span>
+          </li>
+          <li>
+            <span>{multiply(+(finish_rate ?? 0), 100)}%</span>
+            <span>完成率</span>
+          </li>
+        </ul>
+        <div className={styles.list}>{renderCarouselList()}</div>
       </section>
       <section className={styles.right}>
-        <Station style={{ width: '466px' }} autoplay={autoplay} perfId={perfId} />
+        <Station bg={image_url.station_order_image} autoplay={autoplay} perfId={perfId} />
       </section>
     </div>
   );
 };
-
-/* 表格 */
-
-const Province: React.FC<{
-  style?: React.CSSProperties;
-  perfId: string;
-  autoplay?: boolean;
-}> = React.memo((props) => {
-  const { provinceLoading, fetchProvinceData } = usePerfData();
-  const { perfId, autoplay, style = {} } = props;
-  const pagination = {
-    pageSize: 8,
-    current: 1,
-  };
-  const fetchList: FetchListType = useCallback(async (p) => {
-    const res = fetchProvinceData({
-      start: (p.current - 1) * p.pageSize,
-      length: pagination.pageSize,
-      performance_show_id: perfId,
-    });
-    return res;
-  }, []);
-
-  return (
-    <CarouselTable
-      rowKey="org_id"
-      loading={provinceLoading}
-      autoplay={autoplay}
-      columns={stationColumns}
-      pagination={pagination}
-      style={style}
-      fetchList={fetchList}
-    />
-  );
-});
-
-const Station: React.FC<{
-  style?: React.CSSProperties;
-  perfId: string;
-  autoplay?: boolean;
-}> = React.memo((props) => {
-  const { stationLoading, fetchStationData } = usePerfData();
-  const { perfId, autoplay, style = {} } = props;
-  const pagination = {
-    pageSize: 20,
-    current: 1,
-  };
-  const fetchList: FetchListType = useCallback(async (p) => {
-    const res = await fetchStationData({
-      start: (p.current - 1) * p.pageSize,
-      length: pagination.pageSize,
-      performance_show_id: perfId,
-    });
-    return res;
-  }, []);
-
-  return (
-    <CarouselTable
-      rowKey="org_id"
-      loading={stationLoading}
-      autoplay={autoplay}
-      columns={stationColumns}
-      pagination={pagination}
-      style={style}
-      fetchList={fetchList}
-    />
-  );
-});
-
-const Consultant: React.FC<{
-  style?: React.CSSProperties;
-  perfId: string;
-  autoplay?: boolean;
-}> = React.memo((props) => {
-  const { consultantLoading, fetchConsultantData } = usePerfData();
-  const { perfId, autoplay, style = {} } = props;
-  const pagination = {
-    pageSize: 5,
-    current: 1,
-  };
-  const fetchList: FetchListType = useCallback(async (p) => {
-    const res = await fetchConsultantData({
-      start: (p.current - 1) * p.pageSize,
-      length: pagination.pageSize,
-      performance_show_id: perfId,
-    });
-    return res;
-  }, []);
-
-  return (
-    <CarouselTable
-      rowKey="consultant_id"
-      loading={consultantLoading}
-      autoplay={autoplay}
-      columns={consultantColumns}
-      pagination={pagination}
-      fetchList={fetchList}
-      style={style}
-    />
-  );
-});

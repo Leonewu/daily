@@ -1,38 +1,78 @@
 .preview {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
   flex-flow: row nowrap;
   justify-content: space-between;
   // width: calc(100% + 32px);
   // height: calc(100% + 32px);
-
-  width: 1920px;
-  height: 1080px;
-  margin-top: -16px;
-  margin-left: -16px;
-  padding: 0 54px;
+  width: var(--width, 1920);
+  height: var(--height, 1080);
+  padding: 0 24px;
+  overflow: hidden;
   background-color: #ddd;
   background-repeat: no-repeat;
   background-size: cover;
+
+  img[src=''],
+  img:not([src]) {
+    opacity: 0;
+  }
+
+  --bg-color: rgba(0, 0, 0, 0.16);
 }
+
+.fullScreen {
+  position: absolute;
+  top: 0;
+  right: -36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: #fff;
+  font-size: 26px;
+  background: rgba(0, 0, 0, 0.12);
+  border-top-left-radius: 2px;
+  border-bottom-right-radius: 2px;
+  border-bottom-left-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease 0s;
+  &:hover {
+    right: 0;
+    background: rgba(0, 0, 0, 0.4);
+  }
+}
+
+.show {
+  right: 0;
+}
+
 .left {
   display: flex;
   flex-flow: column nowrap;
   justify-content: space-between;
   height: 100%;
-  padding: 80px 0 30px;
+  padding: 24px 0 16px;
 }
 .notice {
-  margin-top: 16px;
+  margin: 0;
+  padding: 20px 0 0;
   color: #fff;
   font-size: 20px;
   text-align: center;
-  opacity: 0.73;
 }
 .middle {
+  display: flex;
   flex: 1;
+  flex-flow: column nowrap;
+  align-items: center;
+  justify-content: space-between;
   height: 100%;
-  margin: 0 70px;
-  padding-top: 366px;
+  margin: 0;
+  padding: 48px 0 40px;
   & > header {
     margin-bottom: 18px;
     color: rgba(255, 255, 255, 0.59);
@@ -40,71 +80,83 @@
     text-align: center;
   }
 }
-.countdown {
-  display: flex;
-  flex-flow: row nowrap;
-  align-items: flex-end;
-  justify-content: center;
-  & > span {
-    display: block;
-    & + span {
-      margin-left: 18px;
-    }
-    &:nth-child(2n + 1) {
-      height: 106px;
-      color: #f00;
-      // mix-blend-mode: lighten;
-      font-weight: bold;
-      font-size: 84px;
-      line-height: 106px;
-      text-align: center;
-      background: rgba(255, 255, 255, 0.8);
-      border-radius: 10px;
-    }
-    &:nth-child(2n) {
-      color: #fff;
-      font-size: 36px;
-    }
-  }
+.middleBg {
+  width: 700px;
+  height: 210px;
 }
 
-.showDay {
-  justify-content: flex-start;
-  & > span:nth-child(5) {
-    margin-left: auto;
-  }
+.countdown {
+  height: 84px;
+  margin: 52px 0 40px;
+  background: var(--bg-image, var(--bg-color));
+  background-size: cover;
+  border-radius: 8px;
 }
 
 .target {
   display: flex;
   flex-shrink: 0;
-  flex-wrap: wrap;
-  & > div {
-    text-align: center;
-    & > header {
+  align-items: center;
+  justify-content: space-evenly;
+  width: 784px;
+  height: 213px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--bg-image, var(--bg-color));
+  background-size: cover;
+  border-radius: 8px;
+  & > li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    & > span:first-child {
       margin-bottom: 20px;
-      color: #fff;
-      font-size: 36px;
-      opacity: 0.8;
-    }
-    & > span {
-      height: 106px;
-      padding: 0 36px;
-      color: #f00;
-      // mix-blend-mode: lighten;
+      color: #ffe132;
       font-weight: bold;
-      font-size: 84px;
-      line-height: 106px;
-      background: rgba(255, 255, 255);
-      border-radius: 10px;
-      opacity: 0.8;
+      font-size: 60px;
+      font-family: xiaonum;
     }
-    &:first-child {
-      width: 100%;
-      margin-bottom: 63px;
+    & > span:last-child {
+      color: #fff;
+      font-weight: 500;
+      font-size: 32px;
+      font-family: PingFangSC-Medium, PingFang SC;
     }
-    &:nth-child(3) {
-      margin-left: auto;
+  }
+}
+
+.list {
+  width: 784px;
+  height: 320px;
+  overflow: hidden;
+  border-radius: 8px;
+  & > img {
+    display: block;
+    width: 100%;
+    height: 60px;
+  }
+  & > .content {
+    height: calc(100% - 60px);
+    background: var(--bg-image, var(--bg-color));
+    background-size: cover;
+  }
+  .carouselListWrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-top: 12px;
+    & > header {
+      margin-bottom: 4px;
+      color: #fff;
+      font-weight: 500;
+      font-size: 20px;
+      line-height: 28px;
+      text-align: center;
+    }
+    & > .carouselList {
+      flex: 1;
     }
   }
 }
@@ -112,5 +164,5 @@
 .right {
   display: flex;
   height: 100%;
-  padding: 80px 0 36px;
+  padding-top: 24px;
 }
