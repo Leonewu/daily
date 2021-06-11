@@ -343,11 +343,14 @@ module.exports[localStorage.getItem(Math.random())] = () => { … };
 ```
 
 commonJs 动态引入和静态引入的语法是一致的，构建工具无法在构建时知道导出的符号是什么名称，因为这里需要的信息可能会出现在用户浏览器的上下文中，所以编译器无法正确地进行优化。  
-而 esModule 是采用关键字的形式，import 只能放在顶层，动态引入和静态引入有很好的区分。  
+而 esModule 是采用关键字的形式，import 只能放在模块顶级，不能放在作用域内，模块内的 import/export 会在编译阶段提升至顶部。
+
 总的来说，两者的差异为
 
 - esModule 的静态特性更有利于 tree shaking，对编译器友好
 - esModule export 导出变量是强绑定（简单类型和引用类型都会共享），export default 的是值的拷贝，和 commonJs 一样，类似于函数传参
+- esModule 的 import 语句在解析时会被提升到顶层
+- esModule 在浏览器上会进行编译时预解析（type = "module" 的 script 标签默认带有 defer 的行为，以便于在代码运行前就导入），而 commonJs 是在运行时解析
 
 ## 拓展和思考
 
