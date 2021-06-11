@@ -31,3 +31,5 @@
 ## Reflect
 
 ## Symbol
+
+## use strict
