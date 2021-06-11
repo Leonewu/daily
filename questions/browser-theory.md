@@ -25,3 +25,9 @@
 
 - [从浏览器多进程到单进程...](https://segmentfault.com/a/1190000012925872)
 - [js conf](https://www.youtube.com/watch?v=cCOL7MC4Pl0&t=752s)
+
+## 垃圾回收
+
+## 作用域
+
+## 编译过程
