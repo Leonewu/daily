@@ -1,0 +1,3 @@
+[submodule "react-debug/react-github"]
+	path = react-debug/react-github
+	url = https://github.com.cnpmjs.org/facebook/react
