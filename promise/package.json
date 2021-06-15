@@ -1,0 +1,16 @@
+{
+  "name": "promise",
+  "version": "1.0.0",
+  "description": "### 概念和流程",
+  "main": "promise.js",
+  "scripts": {
+    "test:promise": "jest ./promise/",
+    "test": "promises-aplus-tests ./promise.js"
+  },
+  "author": "leone",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^27.0.4",
+    "promises-aplus-tests": "^2.1.2"
+  }
+}
