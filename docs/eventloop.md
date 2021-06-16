@@ -2,7 +2,7 @@
 
 浏览器是多线程多进程架构，至少包括：JS 引擎线程，GUI 渲染线程，事件触发线程。
 
-- JS 引擎是基于事件驱动单线程执行的，无论什么时候都只有一个 JS 线程在运行 JS 程序。
+- JS 是单线程的，并且与 GUI 线程互斥。
 - GUI 渲染线程负责渲染浏览器界面，当界面需要重排、重绘或由于某种操作引发回流时，该线程就会执行。GUI 渲染线程与 JS 引擎是互斥的，当 JS 引擎执行时 GUI 线程会被挂起，GUI 更新会被保存在一个队列中等到 JS 引擎空闲时立即被执行。
 - 事件触发线程：当一个事件被触发时该线程会把事件添加到待处理队列的队尾，等待 JS 引擎的处理。这些事件可来自 JS 引擎当前执行的代码块如 setTimeOut、也可来自浏览器内核的其他线程如鼠标点击、AJAX 异步请求等，但由于 JS 的单线程关系所有这些事件都得排队等待 JS 引擎处理。  
 
@@ -36,7 +36,15 @@ task 有以下几种：
 - 异步函数的回调，如 ajax，setTimeout，setInterval
 - 资源的处理
 
-除了这些之外，常见的还有 window.postMessage。另外，在代码中触发的 dom 事件是同步执行的，如下
+总结起来，属于 task 的有
+
+- setTimeout，setInterval
+- ajax
+- 浏览器触发的 dom event
+- window.postMessage
+- MessageChannel
+
+需要注意的是，在代码中触发的 dom event 是同步执行的，如下
 
 ```js
 document.body.addEventListener('click', () = { 
