@@ -273,7 +273,7 @@ function print() {
 print();
 ```
 
-以上代码复制到控制台执行后，命中断点，可以看到作用域信息。
+以上代码复制到控制台执行后，命中断点，可以看到作用域信息。  
 ![scope 示例](./scope.png)  
 命中断点时的作用域其实就是 `[Local].concat(cb['[[Scopes]]'])`，本地的执行上下文加上父级函数的作用域。  
 注意，由于作用域是在词法分析阶段就已确定，所以如果把 `console.log(i, scope1, scope2, scope3, print, cb)` 改成 `console.log(i)`，就看不到其他作用域了。
@@ -306,7 +306,7 @@ bar.[[Scopes]] = [
 
 ```js
 // 这里的 Scope 代表代码执行时的作用域，不是 [[Scopes]]
-Scope = [AO].concat([[Scope]]);
+Scope = [AO].concat([[Scopes]]);
 ```
 
 ### 经典题目
