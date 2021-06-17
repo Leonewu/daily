@@ -46,7 +46,7 @@ describtor:
 - enumerable
 为 true 时，能在 for in 和 Object.keys 中被枚举
 - writable
-是否可以通过赋值改变其 value
+是否可以通过赋值改变其 value，为 true 时，修改后不会生效
 - configurable
 表示对象的属性是否可以被删除，以及除 value 和 writable 特性外的其他特性是否可以被修改。
 - get
@@ -64,17 +64,53 @@ Object.defineProperty(a, 'b', {
 });
 console.log(a);
 // {b: 1}
-a.hasOwnProperty('b');
-// true
-for (let v in a) { console.log(a); }
+for (let v in a) { console.log(v); }
 // 什么都没打印
 console.log(Object.keys(a));
 console.log(Object.values(a));
 console.log(Object.entries(a));
 // [] [] []
+console.log(Reflect.has(a, 'b'));
+console.log('b' in a);
+console.log(a.hasOwnProperty('b'));
+// true true true
 ```
 
-当 enumerable 为 false 时，任何遍历方法都无法访问到该对象
+当 enumerable 为 false 时，任何批量遍历枚举方法都无法访问到该对象，只有以下方法能访问到
+
+- Reflect.has
+- 不在 for in 中的 in 操作符
+- hasOwnProperty
+
+记住一点 enumerable 只跟批量枚举有关
+
+### Object.freeze
+
+Object.freeze() 方法可以冻结一个对象。一个被冻结的对象再也不能被修改；冻结了一个对象则不能向这个对象添加新的属性，不能删除已有属性，不能修改该对象已有属性的可枚举性、可配置性、可写性，以及不能修改已有属性的值。此外，冻结一个对象后该对象的原型也不能被修改。freeze() 返回和传入的参数相同的对象。注意 Object.freeze 是浅冻结。
+
+```js
+obj1 = {
+  internal: {}
+};
+
+Object.freeze(obj1);
+obj1.internal.a = 'aValue';
+obj1.internal.a // 'aValue'
+```
+
+#### 深冻结
+
+```js
+function deepFreeze(obj) {
+  var keys = Object.keys(obj);
+  keys.forEach((k) => {
+    if (typeof obj[k] === 'object' && obj[k] !== null) {
+      deepFreeze(obj[k]);
+    }
+  });
+  return Object.freeze(obj);
+}
+```
 
 ### instanceof
 
@@ -102,7 +138,7 @@ function myInstanceof(left, right) {
 
 ### hasOwnProperty
 
-hasOwnProperty 方法会返回一个布尔值，指示对象自身属性中是否具有指定的属性（也就是，是否有指定的键），不会访问到原型链上的对象。
+hasOwnProperty 方法会返回一个布尔值，指示对象自身属性中是否具有指定的属性（也就是，是否有指定的键），不会访问到原型链上的对象和 enumberable 为 false 的属性。
 
 ### for in
 
@@ -147,9 +183,37 @@ for (var value of iterable) {
 // 2
 ```
 
-### 如何防止一个对象被修改
+### 如何防止一个对象属性被修改
 
 - Object.freeze
+- Object.defineProperty 设置 writable 为 true
+- Object.defineProperty set 的时候判断 key 的值，让其设置不生效
+
+注意 Object.freeze 是浅冻结
+
+```js
+obj1 = {
+  internal: {}
+};
+
+Object.freeze(obj1);
+obj1.internal.a = 'aValue';
+obj1.internal.a // 'aValue'
+```
+
+递归实现深冻结
+
+```js
+function deepFreeze(obj) {
+  var keys = Object.keys(obj);
+  keys.forEach((k) => {
+    if (typeof obj[k] === 'object' && obj[k] !== null) {
+      deepFreeze(obj[k]);
+    }
+  });
+  return Object.freeze(obj);
+}
+```
 
 ## es6
 
@@ -168,18 +232,80 @@ let proxy = new Proxy(obj, {
   },
   set(target, prop, val) {
     target[prop] = val;
+    return true;
   }
 });
 ```
 
 主要是传入 handler 的书写，包含属性：
 
-- get 拦截对象的读取属性操作，入参为(目标对象, 属性名, Proxy对象)
-- set
+- get 拦截对象的读取属性操作
+  - target 目标对象
+  - prop 属性名
+  - receiver Proxy 对象或者继承 Proxy 的对象
+- set 拦截对象的写入操作
+  - target 目标对象
+  - prop 属性名
+  - receiver 通常是 proxy 本身，但 handler 的 set 方法也有可能在原型链上，或以其他方式被间接地调用（因此不一定是 proxy 本身）
+    > 比如：假设有一段代码执行 obj.name = "jen"， obj 不是一个 proxy，且自身不含 name 属性，但是它的原型链上有一个 proxy，那么，那个 proxy 的 set() 处理器会被调用，而此时，obj 会作为 receiver 参数传进来。
+    >
+- has 针对 in 操作符的代理方法  
+...
+
+#### Proxy 搭配 Reflect 使用
+
+考虑以下场景，对象 a 继承了对象 b 的 proxy，并且对象 b 本身有自己的 getter。
+
+```js
+// animal 对象本身就有 getter
+let animal = new Proxy({
+  _name: 'animal',
+  get name() {
+    return this._name;
+  },
+  log() {
+    console.log(this.name);
+  }
+}, {
+  get: function (target, prop, receiver) {
+    return target[prop];
+    // return Reflect.get(target, prop, receiver);
+  }
+})
+let cat = { _name: 'cat' };
+cat.__proto__ = animal; // 继承 animal
+console.log(cat._name); // cat
+console.log(cat.name); // animal
+```
+
+如果改成 `Reflect.get`，最后一个参数是 this 指向，当原型链上存在 proxy 时，`handle.get` 的最后一个参数 receiver 指向的是原对象，所以作为 `Reflect.get` 的最后一个参数传入。
+
+```js
+// animal 对象本身就有 getter
+let animal = new Proxy({
+  _name: 'animal',
+  get name() {
+    return this._name;
+  },
+  log() {
+    console.log(this.name);
+  }
+}, {
+  get: function (target, prop, receiver) {
+    return Reflect.get(target, prop, receiver);
+    // return target[prop];
+  }
+})
+let cat = { _name: 'cat' };
+cat.__proto__ = animal; // 继承 animal
+console.log(cat._name); // cat
+console.log(cat.name); // cat
+```
 
 ### Proxy 与 Object.defineProperty
 
-- Object.defineProperty 无法监听到动态添加的属性
+- Object.defineProperty 无法监听到动态添加的属性，数组方法
+- Proxy 无法使用 polyfill
 
 ### Reflect
 
