@@ -144,11 +144,224 @@ JavaScript 是一门自动垃圾回收的语言，由 V8 完成垃圾回收。
 引用计数是垃圾回收算法的一种。如果一个对象没有其他引用指向它，则该对象会被视为垃圾并回收。  
 但是如果碰到循环引用，如两个对象相互引用，就能绕过该算法，造成内存泄露。
 
-## 作用域
+## 作用域和变量/激活对象
+
+### 作用域
+
+javascript 的作用域为静态作用域，也称词法作用域，即函数的作用域在函数定义时就决定了。
+
+```js
+var scope = "global scope";
+function checkscope(){
+  var scope = "local scope";
+  function f(){
+      return scope;
+  }
+  return f();
+}
+checkscope();
+```
+
+```js
+var scope = "global scope";
+function checkscope(){
+  var scope = "local scope";
+  function f(){
+      return scope;
+  }
+  return f;
+}
+checkscope()();
+```
+
+以上代码都会打印出 local scope，原因是静态作用域中，函数的作用域基于函数创建的位置。
+
+#### 作用域链
+
+当查找变量时，会先从当前上下文的变量对象中查找，如果没有找到，会从父级的上下文的变量对象中找，直到到达全局变量，这就是作用域链。
+
+### VO 和 AO
+
+VO(variable object) 变量对象，是与执行上下文相关的数据作用域，存储上下文中定义的变量和函数声明。
+AO(activation object) 活动对象，在函数执行时，这个执行上下文的变量对象就会被激活，变成活动对象。
+
+### 执行过程
+
+执行上下文的代码会分成两个步骤：
+
+- 进入执行上下文  
+- 代码执行
+
+#### 进入执行上下文
+
+当进入执行上下文时，还没有执行代码，此时的变量对象包含：
+
+1. 函数形参
+    - 名称和对应值组成的一个变量对象的属性被创建
+    - 没有实参，属性值为 undefined
+2. 函数声明(function a() {})
+    - 由名称和对应值（函数对象(function-object)）组成的一个变量对象的属性被创建
+    - 如果变量对象已经存在相同名称的属性，则完全替代这个属性
+3. 变量声明(关键字声明，如 var)
+    - 有名称和对应值（undefined）组成一个变量对象的属性被创建
+    - 如果变量名称跟已经声明的形参或函数的变量对象相同，则变量声明不会干扰已经存在的这类属性  
+
+这也解释了函数声明提升等现象。  
+
+#### 执行过程示例
+
+```js
+function foo(a) {
+  var b = 2;
+  function c() {}
+  var d = function() {};
+  b = 3;
+}
+foo(1);
+```
+
+进入执行上下文，此时函数还未执行，AO 为：
+
+```js
+AO = {
+  arguments: {
+    0: undefined,
+    length: 1
+  },
+  a: undefined,
+  b: undefined,
+  c: reference to function c() {},
+  d: undefined
+}
+```
+
+代码执行完成后，此时 AO 为：
+
+```js
+AO = {
+  arguments: {
+    0: 1,
+    length: 1
+  },
+  a: 1,
+  b: 3,
+  c: reference to function c() {},
+  d: reference to FunctionExpression "d"
+}
+```
+
+### 执行上下文的作用域
+
+函数的作用域在词法分析的时中就已经确定，在执行时会创建 `[[Scopes]]` 属性，是一个数组，表示其父级的作用域，包含但不一定全都有以下几种：
+
+- Block 块级作用域
+- Closure 闭包作用域
+- Global 全局作用域
+
+```js
+function print() {
+  let scope1 = 'scope1';
+  for (let i = 0; i < 3; i++) {
+    let scope2 = 'scope2';
+    setTimeout(function cb(){
+      let scope3 = 'scope3';
+      debugger
+      console.log(i, scope1, scope2, scope3, print, cb);
+    },0);
+  }
+}
+print();
+```
+
+以上代码复制到控制台执行后，命中断点，可以看到作用域信息。
+![scope 示例](./scope.png)  
+命中断点时的作用域其实就是 `[Local].concat(cb['[[Scopes]]'])`，本地的执行上下文加上父级函数的作用域。  
+注意，由于作用域是在词法分析阶段就已确定，所以如果把 `console.log(i, scope1, scope2, scope3, print, cb)` 改成 `console.log(i)`，就看不到其他作用域了。
+
+#### Scope 和 [[Scopes]] 的示例
+
+再次区分一下，`Scope` 指的是函数执行时的作用域，`[[Scopes]]` 是函数执行时的父级作用域。在函数执行时，`Scope` 包含 `[[Scopes]]`，前者比后者多了个 Local 的作用域（从上文的图例中也可以看出来）。
+
+```js
+function foo() {
+  function bar() {
+    // ...
+  }
+}
+```
+
+在函数创建时，各自的 `[[Scopes]]` 为父级作用域
+
+```js
+foo.[[Scopes]] = [
+  globalContext.VO
+]
+bar.[[Scopes]] = [
+  fooContext.AO,
+  globalContext.VO
+]
+```
+
+函数执行时，AO 激活成了 VO，函数的 scope 变成
+
+```js
+// 这里的 Scope 代表代码执行时的作用域，不是 [[Scopes]]
+Scope = [AO].concat([[Scope]]);
+```
+
+### 经典题目
+
+题目一
+
+```js
+function print1() {
+  for (var i = 0; i < 3; i++) {
+    setTimeout(() => {
+        console.log(i);
+    },0);
+  }
+}
+function print2() {
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => {
+        console.log(i);
+    },0);
+  }
+}
+print1();
+print2();
+```
+
+题目二
+
+```js
+function foo() {
+  console.log(a);
+  a = 1;
+}
+foo(); 
+function bar() {
+  b = 1;
+  console.log(b);
+}
+bar();
+```
+
+题目三
+
+```js
+console.log(foo);
+function foo() {
+  console.log("foo");
+}
+var foo = 1;
+```
 
 ## 问
 
 ### js 为什么是单线程的
+
+视图只有一个，如果是多线程，同时执行多个脚本修改同一个 DOM 的话，页面就需要挂起，或者强制让脚本按顺序执行。页面挂起必然导致页面卡死，操作不了。让脚本顺序执行，就是单线程了。
 
 ### performance 和 Date 的区别
 
@@ -157,5 +370,7 @@ JavaScript 是一门自动垃圾回收的语言，由 V8 完成垃圾回收。
 
 ## 参考
 
-- [从浏览器多进程到单进程...](https://segmentfault.com/a/1190000012925872)
+- [从浏览器多进程到单进程](https://segmentfault.com/a/1190000012925872)
 - [一文搞懂V8引擎的垃圾回收](https://juejin.cn/post/6844904016325902344#heading-7)
+- [JavaScript深入之词法作用域和动态作用域](https://github.com/mqyqingfeng/Blog/issues/3)
+- [JavaScript深入之变量对象](https://github.com/mqyqingfeng/Blog/issues/5)
