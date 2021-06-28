@@ -735,5 +735,5 @@ module.exports = Promise;
 
 ## 参考
 
-- [Promises/A+]('https://promisesaplus.com/')
-- [Promises/A+ Compliance Test Suite]('https://github.com/promises-aplus/promises-tests')
+- [Promises/A+](https://promisesaplus.com/)
+- [Promises/A+ Compliance Test Suite](https://github.com/promises-aplus/promises-tests)

@@ -368,6 +368,17 @@ var foo = 1;
 - Date.now() 以毫秒为单位 受始终偏差和系统时钟调整的影响。时间值可能不总是单调增加，随后的值可能会减少或者保持不变
 - performance.now() 是高分辨率时间，以亚毫秒为单位，并且是稳定的单调递增时钟。
 
+### css 加载是否会阻塞页面渲染
+
+首次渲染中，由于 render tree 需要结合 DOM 和 CSSOM 生成，所以 css 加载会阻塞页面的渲染
+
+### css 和 js 是如何阻塞页面渲染的
+
+### DOMContentLoaded 与 loaded
+
+- DOMContentLoaded 是 DOM 树构建完成的回调
+- loaded 是整个页面的所有资源加载完成的回调
+
 ## 参考
 
 - [从浏览器多进程到单进程](https://segmentfault.com/a/1190000012925872)

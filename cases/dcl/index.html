@@ -1,0 +1,20 @@
+<body>
+  <!-- 白屏 -->
+  <div id="div1"></div>
+  <!-- 白屏 -->
+  <link rel="stylesheet" href="./c1.css" />
+  <!-- 白屏 -->
+  <link rel="stylesheet" href="./c3.css" />
+  <!-- 如果此时 j1.js 尚未下载到本地，则首次渲染，此时的 DOM 树 只有 div1 ，所以页面上只会显示 div1，样式是 c1.css 和 c3.css 的并集。-->
+  <!-- 如果此时 j1.js 已经下载到本地，则先执行 j1.js，页面不会渲染，所以此时仍然是白屏。-->
+  <!--下面的 js 阻塞了 DOM 树的构建，所以下面的 div2 没有在文档的 DOM 树中。 -->
+  <script src="http://test.com:9000/mine/load/case2/j1.js"></script>
+  <!-- j1.js 执行完毕，继续 DOM 解析，div2 被构建在文档 DOM 树中，此时页面上有了div2 元素，样式仍然是 c1.css 和 c3.css 的并集 -->
+  <link rel="stylesheet" href="./c4.css" />
+  <!-- c4.css 加载完毕，重新构建render树，样式变成了 c1.css、c3.css 和 c4.css 的并集 -->
+  <div id="div2"></div>
+  <script>
+  // 利用 performance 统计 load 加载时间。
+    window.onload=function(){console.log(performance.timing.loadEventStart - performance.timing.fetchStart);}
+  </script>
+</body>

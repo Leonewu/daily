@@ -1,34 +1,34 @@
 const node = {
-  weight: 1,
+  val: 1,
   left: {
-    weight: 2,
+    val: 2,
     left: {
-      weight: 3,
+      val: 3,
       left: {
-        weight: 4
+        val: 4
       },
       right: {
-        weight: 5
+        val: 5
       }
     },
     right: {
-      weight: 6
+      val: 6
     }
   },
   right: {
-    weight: 7,
+    val: 7,
     left: {
-      weight: 8
+      val: 8
     },
     right: {
-      weight: 9
+      val: 9
     }
   }
 }
 
 // 深度优先查找
 const dfs_search = (node, target) => {
-  if (node.weight === target) {
+  if (node.val === target) {
     return node
   } else {
     let result = null
@@ -48,7 +48,7 @@ var bfs_print = function (node, target) {
   que.push(node)
   while (que.length !== 0) {
     node = que.pop()
-    if (node.weight === target) return node
+    if (node.val === target) return node
     if (node.left) que.push(node.left)
     if (node.right) que.push(node.right)
   }
@@ -65,11 +65,11 @@ function reserve(node) {
 function printPath(node) {
   const res = [];
   function recur(node, path) {
-    if (node.weight && !node.left && !node.right) {
-      res.push(path.concat(node.weight));
+    if (node.val && !node.left && !node.right) {
+      res.push(path.concat(node.val));
     }
-    node.left && recur(node.left, path.concat(node.weight));
-    node.right && recur(node.right, path.concat(node.weight));
+    node.left && recur(node.left, path.concat(node.val));
+    node.right && recur(node.right, path.concat(node.val));
   }
   recur(node, []);
   return res.map(arr => arr.join(' -> '))
@@ -80,13 +80,13 @@ function findPath(node, target) {
   const res = [];
   function recur(node, path, n) {
     if (!node) return;
-    if (node.weight === n) {
-      res.push(path.concat(node.weight));
+    if (node.val === n) {
+      res.push(path.concat(node.val));
       return;
     }
-    if (node.weight < n) {
-      node.left && recur(node.left, path.concat(node.weight), n - node.weight)
-      node.right && recur(node.right, path.concat(node.weight), n - node.weight)
+    if (node.val < n) {
+      node.left && recur(node.left, path.concat(node.val), n - node.val)
+      node.right && recur(node.right, path.concat(node.val), n - node.val)
     }
   }
   recur(node, [], target);

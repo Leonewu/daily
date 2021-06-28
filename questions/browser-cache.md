@@ -14,9 +14,13 @@ max-age=xxx (xxx is numeric)：缓存内容将在xxx秒后失效
 
 ## 强缓存
 
-浏览器通过
+expired
+cache-control
 
 ## 协商缓存
+
+last-modified
+etag
 
 ## service worker
 
