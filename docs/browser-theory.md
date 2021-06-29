@@ -40,10 +40,30 @@ GPU 初衷是为了实现3D CSS效果。随着发展，Chrome 的 UI 界面都�
 7. js 交给 js 引擎解析
 8. 将 DOM 和 CSSOM 合成渲染树
 9. layout 计算出渲染树每个节点的具体坐标位置
-10. layerize 图层化，根据层级关系分图层（在 chrome 的 layer 标签可以看到图层）
+10. layerize 图层化，根据层级关系分图层（在 chrome 的 layer 标签可以看到图层），涉及的属性有 transform，opacity，will-change，filters
 11. paint 绘制图层，调用 canvas api
 12. rasterization 光栅化，生成每个像素的颜色值
 13. 输出到页面
+
+## 重排和重绘
+
+重排是计算节点的位置和几何信息，当页面布局或者几何信息改变时，就需要重排，对应的是 layout 阶段。
+
+- 添加删除可见的 DOM 元素
+- 元素的位置，尺寸发生变化
+- 浏览器窗口尺寸变化
+
+重绘是将渲染树的每个节点转换为屏幕上的实际像素点，对应的是 paint 和 rasterization 阶段  
+因此重排一定会触发重绘，重绘不一定触发重排。
+浏览器的优化：  
+浏览器会将修改操作放入到队列中，过一段时间或者操作达到阈值时才清空队列。但当我们获取布局信息时，会强制队列刷新，如
+
+- offsetTop, offsetLeft, offsetWidth, offsetHeight
+- scrollTop, scrollLeft, scrollWidth, scrollHeight
+- clientTop, clientLeft, clientWidth, clientHeight
+- getComputedStyle，getBoundingClientRect
+更多触发刷新的属性可以查看 [这里](https://gist.github.com/paulirish/5d52fb081b3570c81e3a)  
+关于手动触发刷新的问题，在 [这个例子](https://www.zhihu.com/question/337189395) 中可以得到验证。
 
 ## 浏览器内核
 
