@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>image lazy load</title>
+  <style>
+    div {
+      width: 500px;
+      height: 700px;
+      overflow-y: auto;
+      margin: 0 auto;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+    }
+    img {
+      width: 100%;
+      min-height: 300px;
+      background: #f0f0f0;
+    }
+    img + img {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="list">
+    <img class="lazyload" data-src="https://wallpapersmug.com/large/95afc8/dark-night-river-forest-minimal-art.jpg" src="" alt="" />
+    <img class="lazyload" data-src="https://wallpapersmug.com/large/ba8e68/clean-lake-mountains-range-trees-nature-4k.jpg" src="" alt="" />
+    <img class="lazyload" data-src="https://wallpapersmug.com/large/7a22c5/forest_mountains_sunset_cool_weather_minimalism.jpg" src="" alt="" />
+    <img class="lazyload" data-src="https://wallpapersmug.com/large/2fa40a/starry-sky-night-mountians-5k.jpg" src="" alt="" />
+  </div>
+</body>
+<script src="index.js"></script>
+</html>
