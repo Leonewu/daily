@@ -225,3 +225,37 @@ promise.then(function onPromiseFulfilled(value) {
   console.log(value === sentinel);
   console.log(value);
 });
+
+
+Promise.resolve(console.log(0)).then(() => {
+  console.log(1)
+  Promise.resolve(console.log(5))
+    .then(() => console.log(3))
+    .then(() => console.log(4))
+    .then(() => {console.log(6)})
+})
+  .then(() => console.log(2))
+  .then(() => console.log(7))
+
+console.log(0);
+{
+  queueMicrotask(() => {
+    console.log(1);
+    console.log(5);
+    queueMicrotask(() => {
+      console.log(3);
+      queueMicrotask(() => {
+        console.log(4);
+        queueMicrotask(() => {
+          console.log(6)
+        })
+      })
+    })
+    queueMicrotask(() => {
+      console.log(2);
+      queueMicrotask(() => {
+        console.log(7);
+      })
+    })
+  })
+}
