@@ -7,11 +7,14 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "启动程序",
+      "name": "调试ast",
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "program": "${workspaceFolder}/utils/glob.js"
+      "args": [
+        "${workspaceFolder}/ast/cjs2esm/index.ts"
+      ],
+      "runtimeArgs": ["${workspaceFolder}/ast/node_modules/ts-node/dist/bin.js"] 
     }
   ]
 }
