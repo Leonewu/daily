@@ -1,24 +1,35 @@
-import a from 'a';
-console.log(123); // const { b } = require('b');
-// const { c: d } = require('c');
-// const e = 1;
-// exports.e = e;
-// exports.b = b;
-// exports.a = a;
-// exports.d = d;
-// // default
-// module.exports = {
-//   a: 1
+// const a = require('a').a;
+// =>
+// import _a from 'a';
+// const a = _a.a;
+// exports.a = require('a').a;
+// exports.a = a.a;
+// exports.a = require('a').b.c
+// exports.a = require('a');
+// exports.a = b.c;
+// exports.a = {
+//   d: 123
 // }
-// module.exports.c = {
-//   d: 1,
-//   function() {
-//     console.log(e)
-//   }
-// }
-// module.exports['f'] = {
-//   f: 1
-// }
-// exports['ddd'] = 123;
-// const e = 1;
-// exports['e'] = e;
+// export { default as a } from 'a';
+// exports['a'] = require('a').b.c
+// module.exports.a = require('a')
+// module.exports.a = require('a').b.c
+// module.exports['a'] = require('a')
+// module.exports['a'] = require('a').b.c;
+// module.exports = a;
+// module.exports = a.b.c;
+// const { b: { s: g } } = require('a');
+// const a = require('a').b;
+// const e = require('a').b.c.d;
+// const { a, b: s } = require('b');
+//  const { b: { s: g2 } } = require('a');
+//  const a1 = require('a').a;
+//  const { a: d, b: c } = require('a').a;
+//  const a2 = require('a').a.a.a;
+//  const { b: { s: g1 } } = require('a').a.a.a;
+// exports['default'] = require('a').b.c;
+// exports.default = require('a').b.c.d
+// exports.default = require('a');
+export const a = function a() {
+  console.log(123);
+};

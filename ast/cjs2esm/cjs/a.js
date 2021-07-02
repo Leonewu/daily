@@ -27,4 +27,10 @@
 // exports['e'] = e;
 
 // exports.a = require('a')
-module.exports  = require('a')
+// module.exports  = require('a')
+
+// function a() {
+//   const s = require('s');
+//   exports.s = 123;
+// }
+// export { a as default } from './d.js';

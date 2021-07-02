@@ -15,7 +15,7 @@ import path from 'path';
  * @notice 
  * 1. 命名空间被使用时，不能直接转 export const s = xxx; 
  * 判断 scope.hasBinding(namespace) === true 时，通过 scope.rename(namespace) 重新命名
- * 2. 
+ * 2. 排除动态 require 和 exports
  * */
 
 /**
@@ -67,7 +67,13 @@ const astA = parse(a);
 
 traverse(astA, {
   CallExpression(path) {
+
     if (t.isIdentifier(path.node.callee, { name: 'require' })) {
+      if (!t.isProgram(path.getStatementParent().parent)) {
+        // dynamic require or not the top require
+        console.warn('There are some require statement inside a block.Please move it to the top level')
+        return;
+      }
       // const { a, b: s } = require('b');
       const root = path.findParent(t.isProgram);
       if ( t.isObjectPattern(path.parent.id)) {
@@ -92,7 +98,16 @@ traverse(astA, {
   },
   MemberExpression(path) {
     // exports.xxx = xxx;
-    debugger
+    if (
+      (t.isIdentifier(path.node.object, { name: 'exports' }) ||
+      (t.isIdentifier(path.node.object, { name: 'module' }) && 
+      t.isIdentifier(path.node.property, { name: 'exports' }))) &&
+      !t.isProgram(path.getStatementParent().parent)
+    ) {
+      // dynamic exports of not the top level scope exports
+      console.warn('There are some exports/module.exports statement inside  block. Please move it to the top level')
+      return;
+    }
     if (t.isIdentifier(path.node.object, { name: 'exports' }) && t.isAssignmentExpression(path.parent)) {
       const leftProperty = path.node.property;
       const right= path.parent.right;

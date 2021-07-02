@@ -41,3 +41,4 @@ babel 关于 ast 的一个工具库，暴露出一些判断表达式和生成表
 
 - 加上 try catch
 - 为 console.log 加上行数
+- 箭头函数转普通函数
