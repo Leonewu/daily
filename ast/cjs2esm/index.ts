@@ -4,8 +4,8 @@ import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
 import generate from "@babel/generator";
 import type { GeneratorResult } from "@babel/generator";
-import fs from 'fs';
-import path from 'path';
+// import fs from 'fs';
+// import path from 'path';
 
 /**
  * @case1 处理 require 转换成 import {} 或者 import default, 并且移至顶层

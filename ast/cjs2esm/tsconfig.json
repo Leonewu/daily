@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "CommonJS",
+    "allowJs": false,
+    "esModuleInterop": false,
+    "sourceMap": false,
+    "outDir": "lib",
+    "rootDir": "./",
+    "baseUrl": "./"
+  },
+  "files": ["./index.ts"],
+}
