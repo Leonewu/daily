@@ -3,6 +3,7 @@ import traverse from '@babel/traverse';
 import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
 import generate from "@babel/generator";
+import type { GeneratorResult } from "@babel/generator";
 import fs from 'fs';
 import path from 'path';
 
@@ -115,9 +116,32 @@ function findCallExpressionWrapper(node: t.MemberExpression): t.MemberExpression
   return null;
 }
 
-function transform(code) {
+class TransformError {
+  public message: string;
+  public filename: string;
+  public column: number;
+  public line: number;
+  constructor(msg: string, options?: { filename?: string; column?: number; line?: number; }) {
+    this.message = msg;
+    this.filename = options.filename;
+    this.column = options.column;
+    this.line = options.line;
+  }
+}
+
+type TransformOptions = {
+  silent: boolean;
+}
+
+function transform(code: string, options?: TransformOptions): (GeneratorResult & { errors: TransformError[] }) {
+  const { silent } = options || {};
   let root: NodePath<t.Program>;
-  // if (!code.trim()) return '';
+  const errors = [];
+  if (!code.trim()) return {
+    code: '',
+    errors: [],
+    map: null
+  };
   const ast = parse(code);
   traverse(ast, {
     Program(path) {
@@ -133,22 +157,30 @@ function transform(code) {
         }
         if (!t.isProgram(path.getStatementParent().parent)) {
           // not the top level require
-          console.warn(`There is a require statements inside a block.Please move it to the top level. at ${JSON.stringify(path.node.loc.end)}`)
+          errors.push(new TransformError('There is a require statements inside a block.Please move it to the top level', {
+            column: path.node.loc.end.column,
+            line: path.node.loc.end.line,
+            filename: (path.node.loc as any).filename
+          }));
           return;
         }
         if (!t.isStringLiteral(path.node.arguments[0])) {
-          console.warn(`require's arguments should be a string. at ${JSON.stringify(path.node.loc.end)}`)
+          errors.push(new TransformError("require's arguments should be a string", {
+            column: path.node.loc.end.column,
+            line: path.node.loc.end.line,
+            filename: (path.node.loc as any).filename
+          }));
           return;
         }
         if (t.isMemberExpression(path.parent)) {
           // const a = require('a').a.b.c; 
           // const { a, b } = require('a').a.b.c; 
-          const uid = path.scope.generateUidIdentifier("uid");
-          const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], path.node.arguments[0]);
-          root.node.body.unshift(importStatement);
-          path.parent.object = uid;
           const variableDeclarator = path.find(p => t.isVariableDeclarator(p)) as NodePath<t.VariableDeclarator>;
           if (variableDeclarator) {
+            const uid = path.scope.generateUidIdentifier("uid");
+            const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], path.node.arguments[0]);
+            root.node.body.unshift(importStatement);
+            path.parent.object = uid;
             let id = variableDeclarator.node.id;
             if (t.isObjectPattern(id)) {
               // const { a, b, ...rest } = require('a').e.f; 
@@ -167,7 +199,11 @@ function transform(code) {
               variableDeclarator.parentPath.replaceWith(t.variableDeclaration('const', [t.variableDeclarator(id, variableDeclarator.node.init)]));
             }
           } else {
-            console.warn(`an error occurs at ${JSON.stringify(path.node.loc.end)}`);
+            errors.push(new TransformError("an error occurs", {
+              column: path.node.loc.end.column,
+              line: path.node.loc.end.line,
+              filename: (path.node.loc as any).filename
+            }));
             return;
           }
         } else if (t.isVariableDeclarator(path.parent)) {
@@ -191,7 +227,11 @@ function transform(code) {
             }
           } else if (t.isIdentifier(path.parent.id)) {
             if (!t.isStringLiteral(path.node.arguments[0])) {
-              console.error(`require method's arguments should not be a expression or a variable.Please modify it manually or it won't be transformed. at ${JSON.stringify(path.node.loc.end)}}`)
+              errors.push(new TransformError("require's arguments should be a string", {
+                column: path.node.loc.end.column,
+                line: path.node.loc.end.line,
+                filename: (path.node.loc as any).filename
+              }));
               return;
             }
             // const a = require('a');
@@ -203,19 +243,32 @@ function transform(code) {
           } else {
             // const a.v.b = require('a');
             // const [a,b] = require('a');
-            console.warn(`illegal left side of require. at ${JSON.stringify(path.node.loc.end)}`);
+            errors.push(new TransformError("illegal left side of require", {
+              column: path.node.loc.end.column,
+              line: path.node.loc.end.line,
+              filename: (path.node.loc as any).filename
+            }));
             return;
           }
         } else if (t.isExpressionStatement(path.parent)) {
           if (!t.isStringLiteral(path.node.arguments[0])) {
-            console.error(`require method's arguments should not be a expression or a variable.Please modify it manually or it won't be transformed. at ${JSON.stringify(path.node.loc.end)}}`);
+            errors.push(new TransformError("require method's arguments should not be a expression or a variable", {
+              column: path.node.loc.end.column,
+              line: path.node.loc.end.line,
+              filename: (path.node.loc as any).filename
+            }));
             return;
           }
           // require('index.less')
           path.parentPath.replaceWith(t.importDeclaration([], path.node.arguments[0]));
         } else {
           // error
-          console.warn(`require method couldn't be wrote inside an expression.Please modify it manually or it won't be transform. at${JSON.stringify(path.node.loc.end)}`);
+          errors.push(new TransformError("require method couldn't be wrote inside an expression", {
+            column: path.node.loc.end.column,
+            line: path.node.loc.end.line,
+            filename: (path.node.loc as any).filename
+          }));
+          return;
         }
       }
     },
@@ -231,7 +284,11 @@ function transform(code) {
         !t.isProgram(path.getStatementParent().parent)
       ) {
         // dynamic exports of not the top level scope exports
-        console.warn(`There is a exports/module.exports statements inside a block.Please move it to the top level. at ${JSON.stringify(path.node.loc.end)}`)
+        errors.push(new TransformError("exports/module.exports should be declared at the top level", {
+          column: path.node.loc.end.column,
+          line: path.node.loc.end.line,
+          filename: (path.node.loc as any).filename
+        }));
         return;
       }
       // exports
@@ -262,7 +319,11 @@ function transform(code) {
           leftIdentifier = leftProperty;
         } else {
           // error
-          console.warn(`There is an unfriendly dynamic exports key like 'exports[a--]'.Please remove it manually or it won't be transformed. at ${JSON.stringify(leftProperty.loc.end)}`)
+          errors.push(new TransformError("exports key should not be an expression like 'exports[a--]'", {
+            column: path.node.loc.end.column,
+            line: path.node.loc.end.line,
+            filename: (path.node.loc as any).filename
+          }));
           return;
         }
         if (t.isMemberExpression(right)) {
@@ -272,7 +333,11 @@ function transform(code) {
             // exports.a = require('a').b.c.d => import _uid from 'a'; export const a = _uid.b.c.d;
             const uid = path.scope.generateUidIdentifier("uid");
             if (!t.isStringLiteral(memberExpression.object.arguments[0])) {
-              console.error(`require method's arguments should not be a expression or a variable.Please modify it manually or it won't be transformed. at ${JSON.stringify(path.node.loc.end)}}`)
+              errors.push(new TransformError("require's arguments should be a string", {
+                column: path.node.loc.end.column,
+                line: path.node.loc.end.line,
+                filename: (path.node.loc as any).filename
+              }));
               return;
             }
             const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], memberExpression.object.arguments[0]);
@@ -308,7 +373,11 @@ function transform(code) {
           // exports.a = require('a'); => import _uid from 'a'; export const a = _uid;
           const uid = path.scope.generateUidIdentifier("uid");
           if (!t.isStringLiteral(right.arguments[0])) {
-            console.warn(`require's arguments should be a string. at ${JSON.stringify(path.node.loc.end)}`)
+            errors.push(new TransformError("require's arguments should be a string", {
+              column: path.node.loc.end.column,
+              line: path.node.loc.end.line,
+              filename: (path.node.loc as any).filename
+            }));
             return;
           }
           const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], right.arguments[0]);
@@ -354,7 +423,11 @@ function transform(code) {
             // module.exports = require('a').b.c.d => import uid from 'a'; const a = _uid.b.c.d; export default a;
             const uid = path.scope.generateUidIdentifier("uid");
             if (!t.isStringLiteral(memberExpression.object.arguments[0])) {
-              console.error(`require method's arguments should not be a expression or a variable.Please modify it manually or it won't be transformed. at ${JSON.stringify(path.node.loc.end)}}`);
+              errors.push(new TransformError("require's arguments should be a string", {
+                column: path.node.loc.end.column,
+                line: path.node.loc.end.line,
+                filename: (path.node.loc as any).filename
+              }));
               return;
             }
             const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], memberExpression.object.arguments[0]);
@@ -379,7 +452,11 @@ function transform(code) {
         } else if (t.isCallExpression(right) && t.isIdentifier(right.callee, { name: 'require' })) {
           // module.exports = require('a') => export { default } from 'a';
           if (!t.isStringLiteral(right.arguments[0])) {
-            console.error(`require method's arguments should not be a expression or a variable.Please modify it manually or it won't be transformed. at ${JSON.stringify(path.node.loc.end)}}`);
+            errors.push(new TransformError("require's arguments should be a string", {
+              column: path.node.loc.end.column,
+              line: path.node.loc.end.line,
+              filename: (path.node.loc as any).filename
+            }));
             return;
           }
           const exportStatement = t.exportNamedDeclaration(
@@ -430,7 +507,11 @@ function transform(code) {
           leftIdentifier = leftProperty;
         } else {
           // error
-          console.warn(`There is an unfriendly dynamic exports key like 'exports[a--]'.Please remove it manually or it won't be transformed. at ${JSON.stringify(leftProperty.loc.end)}`)
+          errors.push(new TransformError("exports key should not be expression like 'exports[a--]'", {
+            column: path.node.loc.end.column,
+            line: path.node.loc.end.line,
+            filename: (path.node.loc as any).filename
+          }));
           return;
         }
         if (t.isMemberExpression(right)) {
@@ -440,7 +521,11 @@ function transform(code) {
             // module.exports.a = require('a').b.c.d => import _uid from 'a'; export const a = _uid.b.c.d;
             const uid = path.scope.generateUidIdentifier("uid");
             if (!t.isStringLiteral(memberExpression.object.arguments[0])) {
-              console.error(`require method's arguments should not be a expression or a variable.Please modify it manually or it won't be transformed. at ${JSON.stringify(path.node.loc.end)}}`);
+              errors.push(new TransformError("require's arguments should be a string", {
+                column: path.node.loc.end.column,
+                line: path.node.loc.end.line,
+                filename: (path.node.loc as any).filename
+              }));
               return;
             }
             const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], memberExpression.object.arguments[0]);
@@ -483,7 +568,11 @@ function transform(code) {
           // module.exports.a = require('a'); => import _uid from 'a'; export const a = _uid;
           const uid = path.scope.generateUidIdentifier("uid");
           if (!t.isStringLiteral(right.arguments[0])) {
-            console.error(`require method's arguments should not be a expression or a variable.Please modify it manually or it won't be transformed. at ${JSON.stringify(path.node.loc.end)}}`);
+            errors.push(new TransformError("require's arguments should be a string", {
+              column: path.node.loc.end.column,
+              line: path.node.loc.end.line,
+              filename: (path.node.loc as any).filename
+            }));
             return;
           }
           const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], right.arguments[0]);
@@ -515,11 +604,16 @@ function transform(code) {
       }
     }
   });
-  return generate(ast);
+  const res = generate(ast);
+  if (errors.length && !silent) {
+    console.error(`${errors[0].message} (${errors[0].filename}: ${errors[0].line}, ${errors[0].column})`);
+  }
+  return {
+    ...res,
+    errors
+  };
 }
+
 
 export default transform;
 
-
-// const content = fs.readFileSync(path.resolve(__dirname, 'cjs/c.js'), 'utf-8');
-// fs.writeFileSync(path.resolve(__dirname, 'output.js'), transform(content).code)
