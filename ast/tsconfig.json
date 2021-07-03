@@ -5,6 +5,5 @@
     "allowJs": false,
     "esModuleInterop": true,
     "sourceMap": true
-  },
-  "exclude": []
+  }
 }
