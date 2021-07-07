@@ -4,13 +4,13 @@ import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
 import generate from "@babel/generator";
 import type { GeneratorResult } from "@babel/generator";
-// import fs from 'fs';
-// import path from 'path';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * @case1 处理 require 转换成 import {} 或者 import default, 并且移至顶层
  * @visitor CallExpression
- * @api importDeclaration importDefailtSpecifier importSpecifier
+ * @api importDeclaration importDefaultSpecifier importSpecifier
  * @case2 处理 exports module.exports 转换成 export const 或者 export default
  * @visitor MemberExpression
  * @api exportNamedDeclaration exportDefaultDeclaration
@@ -24,9 +24,19 @@ import type { GeneratorResult } from "@babel/generator";
 /**
  * @test require
  * const a = require('a');
+ * const a = require('a').default;
+ * const a = require('a').default.a;
+ * const a = require('a').default.a.b;
  * const { a, b } = require('a');
+ * const { a, b } = require('a').default;
+ * const { a, b } = require('a').default.a;
+ * const { a, b } = require('a').default.a.b;
  * const { a: d, b } = require('a'); 
+ * const { a: d, b } = require('a').default; 
+ * const { a: d, b } = require('a').default.a; 
  * const { a: d, b: c } = require('a');
+ * const { a: d, b: c } = require('a').default;
+ * const { a: d, b: c } = require('a').default.a;
  * const { b: { s: g } } = require('a');
  * const a = require('a').a;
  * const { a: d, b: c } = require('a').a;
@@ -52,11 +62,16 @@ import type { GeneratorResult } from "@babel/generator";
  * exports.default = 1
  * exports.default = { a: 123 }
  * exports.['default'] = ''
+ * exports.['a'] = require('a')
  * module.exports.default = ''
  * module.exports['default'] = ''
+ * module.exports['default'] = {}
  * module.exports['default'] = require('a');
+ * module.exports['default'] = require('a').default;
  * module.exports['default'] = require('a').b.c;
+ * module.exports['a'] = require('a').default;
  * exports.default = require('a')
+ * exports.default = require('a').default
  * exports.default = require('a').b.c
  * @todo
  */
@@ -150,6 +165,7 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
     CallExpression(path) {
       if (t.isIdentifier(path.node.callee, { name: 'require' })) {
         const assignmentExpression = path.findParent(p => t.isAssignmentExpression(p));
+        debugger
         if (assignmentExpression?.shouldSkip) {
           // skip when required then exports immediately 
           // it was handled in memberExpression
@@ -173,33 +189,90 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
           return;
         }
         if (t.isMemberExpression(path.parent)) {
-          // const a = require('a').a.b.c; 
-          // const { a, b } = require('a').a.b.c; 
-          const variableDeclarator = path.find(p => t.isVariableDeclarator(p)) as NodePath<t.VariableDeclarator>;
-          if (variableDeclarator) {
-            const uid = path.scope.generateUidIdentifier("uid");
-            const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], path.node.arguments[0]);
-            root.node.body.unshift(importStatement);
-            path.parent.object = uid;
-            let id = variableDeclarator.node.id;
-            if (t.isObjectPattern(id)) {
-              // const { a, b, ...rest } = require('a').e.f; 
-              // => import uid from 'a'; 
-              //    const uid1 = uid.e.f; 
-              //    const { a, b, ...rest } = uid1;
-              const variableStatement = [];
-              const uid2 = path.scope.generateUidIdentifier("uid");
-              const statement1 = t.variableDeclaration('const', [t.variableDeclarator(uid2, variableDeclarator.node.init)]);
-              variableStatement.push(statement1);
-              const statement2 = t.variableDeclaration('const', [t.variableDeclarator(id, uid2)]);
-              variableStatement.push(statement2);
-              variableDeclarator.parentPath.replaceWithMultiple(variableStatement);
+          if (t.isVariableDeclarator(path.parentPath.parent)) { 
+            if (t.isIdentifier(path.parent.property, { name: 'default' }) || t.isStringLiteral(path.parent.property, { value: 'default' })) {
+              // const a = require('a').default
+              // const a = require('a')['default']
+              // const { a, b } = require('a').default
+              // const { a, b } = require('a')['default']
+              if (t.isObjectPattern(path.parentPath.parent.id)) {
+                // const { a, b } = require('a').default;
+                // => import _a from 'a'; const { a, b } = _a;
+                const uid = path.scope.generateUidIdentifier(path.node.arguments[0].value);
+                const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], path.node.arguments[0]);
+                root.node.body.unshift(importStatement);
+                path.parentPath.replaceWith(uid);
+              } else if (t.isIdentifier(path.parentPath.parent.id)) {
+                // const a = require('a').default;
+                // => import a from 'a';
+                const uid = path.parentPath.parent.id;
+                const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], path.node.arguments[0]);
+                root.node.body.unshift(importStatement);
+                path.parentPath.parentPath.parentPath.remove();
+              } else {
+                // error
+                errors.push(new TransformError("unhandled expression", {
+                  column: path.node.loc.end.column,
+                  line: path.node.loc.end.line,
+                  filename: (path.node.loc as any).filename
+                }));
+                return;
+              }
             } else {
-              // const a = require('a').b.c => import uid from 'a'; const a = uid.b.c;
-              variableDeclarator.parentPath.replaceWith(t.variableDeclaration('const', [t.variableDeclarator(id, variableDeclarator.node.init)]));
+              // const { a, b } = require('a').a
+              // const { a, b } = require('a')['a']
+              // const a = require('a').a
+              // const a = require('a')['a']
+              if (t.isObjectPattern(path.parentPath.parent.id)) {
+                // const { a, b } = require('a').a;
+                // const { a, b } = require('a')['a'];
+                // => import * as _a from 'a'; const { a, b } = _a.a;
+                const uid = path.scope.generateUidIdentifier(path.node.arguments[0].value);
+                const importStatement = t.importDeclaration([t.importNamespaceSpecifier(uid)], path.node.arguments[0]);
+                root.node.body.unshift(importStatement);
+                path.parent.object = uid;
+                const variableStatement = t.variableDeclaration('const', [path.parentPath.parent]);
+                path.parentPath.parentPath.parentPath.replaceWith(variableStatement);
+              } else if (t.isIdentifier(path.parentPath.parent.id)) {
+                // const a = require('a').b;
+                // => import { b as a } from 'a';
+                // path.parent.property must be a StringLiteral or Identifier
+                const importStatement = t.importDeclaration([t.importSpecifier(path.parentPath.parent.id, ((path.parent as t.MemberExpression).property as t.Identifier))], path.node.arguments[0]);
+                root.node.body.unshift(importStatement);
+                path.parentPath.parentPath.parentPath.remove();
+              } else {
+                // error
+                errors.push(new TransformError("unhandled expression", {
+                  column: path.node.loc.end.column,
+                  line: path.node.loc.end.line,
+                  filename: (path.node.loc as any).filename
+                }));
+                return;
+              }
+            }
+          } else if (t.isMemberExpression(path.parentPath.parent)) {
+            if (t.isIdentifier(path.parent.property, { name: 'default' }) || t.isStringLiteral(path.parent.property, { value: 'default' })) {
+              // const a = require('a').default.b; 
+              // => import _a from 'a'; const a = _a.b; 
+              // const { a, b } = require('a').default.b.c;
+              const uid = path.scope.generateUidIdentifier(path.node.arguments[0].value);
+              const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], path.node.arguments[0]);
+              root.node.body.unshift(importStatement);
+              // replace that memberExpression's object with uid;
+              path.parentPath.parentPath.replaceWith(t.memberExpression(uid, path.parentPath.parent.property));
+            } else {
+              // const a = require('a').a.b.c;
+              // => import * as _a from 'a'; const a = _a.b.c; 
+              // const { a, b } = require('a').a.b.c; 
+              const uid = path.scope.generateUidIdentifier(path.node.arguments[0].value);
+              const importStatement = t.importDeclaration([t.importNamespaceSpecifier(uid)], path.node.arguments[0]);
+              root.node.body.unshift(importStatement);
+              // replace that memberExpression's object with uid;
+              path.parentPath.replaceWith(t.memberExpression(uid, path.parent.property));
             }
           } else {
-            errors.push(new TransformError("an error occurs", {
+            // unhandled circumstance
+            errors.push(new TransformError("unhandled expression", {
               column: path.node.loc.end.column,
               line: path.node.loc.end.line,
               filename: (path.node.loc as any).filename
@@ -207,6 +280,8 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
             return;
           }
         } else if (t.isVariableDeclarator(path.parent)) {
+          // const { a, b: c, d } = require('b');
+          // const b = require('b');
           if (t.isObjectPattern(path.parent.id)) {
             const isPureNamespaceImport = path.parent.id.properties.every(property => {
               return t.isObjectProperty(property) && t.isIdentifier(property.key) && t.isIdentifier(property.value);
@@ -216,30 +291,20 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
               const specifiers = path.parent.id.properties.map((property) => {
                 return t.importSpecifier((property as t.ObjectProperty).value as t.Identifier, (property as t.ObjectProperty).key as t.Identifier);
               });
-              path.parentPath.parentPath.replaceWith(t.importDeclaration(specifiers, path.node.arguments[0]));
+              root.node.body.push(t.importDeclaration(specifiers, path.node.arguments[0]));
+              path.parentPath.parentPath.remove();
             } else {
-              // const { a, b: { c, d } } = require('b'); => import uid from 'b'; const { a, b: { c, d } } = uid;
-              const uid = path.scope.generateUidIdentifier("uid");
-              const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], path.node.arguments[0]);
+              // const { a, b: { c, d } } = require('b'); => import * as _b from 'b'; const { a, b: { c, d } } = _b;
+              const uid = path.scope.generateUidIdentifier(path.node.arguments[0].value);
+              const importStatement = t.importDeclaration([t.importNamespaceSpecifier(uid)], path.node.arguments[0]);
               root.node.body.unshift(importStatement);
-              const variableStatement = t.variableDeclaration('const', [t.variableDeclarator(path.parent.id, uid)]);
-              path.parentPath.parentPath.replaceWith(variableStatement);
+              path.replaceWith(uid);
             }
           } else if (t.isIdentifier(path.parent.id)) {
-            if (!t.isStringLiteral(path.node.arguments[0])) {
-              errors.push(new TransformError("require's arguments should be a string", {
-                column: path.node.loc.end.column,
-                line: path.node.loc.end.line,
-                filename: (path.node.loc as any).filename
-              }));
-              return;
-            }
             // const a = require('a');
-            const defaultImport = t.importDeclaration([
-              t.importDefaultSpecifier(path.parent.id)
-            ], path.node.arguments[0]);
+            const importStatement = t.importDeclaration([t.importNamespaceSpecifier(path.parent.id)], path.node.arguments[0]);
+            root.node.body.unshift(importStatement);
             path.parentPath.parentPath.remove();
-            root.node.body.unshift(defaultImport);
           } else {
             // const a.v.b = require('a');
             // const [a,b] = require('a');
@@ -251,14 +316,6 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
             return;
           }
         } else if (t.isExpressionStatement(path.parent)) {
-          if (!t.isStringLiteral(path.node.arguments[0])) {
-            errors.push(new TransformError("require method's arguments should not be a expression or a variable", {
-              column: path.node.loc.end.column,
-              line: path.node.loc.end.line,
-              filename: (path.node.loc as any).filename
-            }));
-            return;
-          }
           // require('index.less')
           path.parentPath.replaceWith(t.importDeclaration([], path.node.arguments[0]));
         } else {
@@ -297,6 +354,7 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
         const right = path.parent.right;
         let leftIdentifier;
         let isExportDefault = false;
+        let isPureImportDefault = false;
         if (t.isStringLiteral(leftProperty)) {
           // exports['xxx'] = xxx;
           if (leftProperty.value === 'default') {
@@ -330,8 +388,7 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
           // find the nested memberExpression
           const memberExpression = findCallExpressionWrapper(right);
           if (memberExpression && t.isCallExpression(memberExpression.object) && t.isIdentifier(memberExpression.object.callee, { name: 'require' })) {
-            // exports.a = require('a').b.c.d => import _uid from 'a'; export const a = _uid.b.c.d;
-            const uid = path.scope.generateUidIdentifier("uid");
+            // exports.a = require('a').b.c.d => import * as _a from 'a'; export const a = _a.b.c.d;
             if (!t.isStringLiteral(memberExpression.object.arguments[0])) {
               errors.push(new TransformError("require's arguments should be a string", {
                 column: path.node.loc.end.column,
@@ -340,25 +397,64 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
               }));
               return;
             }
-            const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], memberExpression.object.arguments[0]);
-            root.node.body.unshift(importStatement);
-            // replace the callExpression to the uid
-            memberExpression.object = uid;
-            if (isExportDefault) {
-              // exports.default = require('a').b.c.d; 
-              // => import uid from 'a'
-              // const _default = uid.b.c.d
-              // export default _default;
-              const defaultUid = path.scope.generateUidIdentifier('default');
-              const variableDeclaration = t.variableDeclaration('const', [t.variableDeclarator(defaultUid, right)]);
-              const exportDeclaration = t.exportDefaultDeclaration(defaultUid);
-              path.parentPath.parentPath.replaceWithMultiple([
-                variableDeclaration,
-                exportDeclaration
-              ]);
+            let uid;
+            if (t.isIdentifier(memberExpression.property, { name: 'default' }) || t.isStringLiteral(memberExpression.property, { value: 'default' })) {
+              uid = path.scope.generateUidIdentifier(memberExpression.object.arguments[0].value);
+              const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], memberExpression.object.arguments[0]);
+              root.node.body.unshift(importStatement);
+              if (right === memberExpression) {
+                // the right side are
+                // require('a').default 
+                // require('a')['default']
+                // => import _a from 'a'
+                path.parent.right = uid;
+                isPureImportDefault = true;
+              } else {
+                // right side are
+                // require('a').default.a
+                // require('a').['default'].a
+                function replaceRequireMemberExpressionWith(node, newNode) {
+                  if (
+                    t.isMemberExpression(node) && 
+                    t.isMemberExpression(node.object) && 
+                    t.isCallExpression(node.object.object) &&
+                    t.isIdentifier(node.object.object.callee, { name: 'require' })
+                  ) {
+                    node.object = newNode;
+                  } else if (t.isMemberExpression(node) && t.isMemberExpression(node.object)) {
+                    replaceRequireMemberExpressionWith(node.object, newNode);
+                  }
+                }
+                replaceRequireMemberExpressionWith(path.parent.right, uid);
+              }
             } else {
-              // exports.a = require('a').b.c.d => import _uid from 'a'; export const a = _uid.b.c.d;
-              const exportStatement = t.exportNamedDeclaration(t.variableDeclaration('const', [t.variableDeclarator(leftIdentifier, right)]));
+              // require('a').a 
+              // require('a')['a']
+              // require('a')['a'].b
+              uid = path.scope.generateUidIdentifier(memberExpression.object.arguments[0].value);
+              const importStatement = t.importDeclaration([t.importNamespaceSpecifier(uid)], memberExpression.object.arguments[0]);
+              root.node.body.unshift(importStatement);
+              // replace the callExpression to the uid
+              memberExpression.object = uid;
+            }
+            if (isExportDefault) {
+              // exports.default = require('a').b.c.d; => import _a from 'a'; const _default = _a.b.c.d; export default _uid;
+              const statement = [];
+              if (isPureImportDefault) {
+                const exportDeclaration = t.exportDefaultDeclaration(uid);
+                statement.push(exportDeclaration);
+              } else {
+                // exports.default = require('a').default;
+                // => import _a from 'a'; export default a;
+                const defaultUid = path.scope.generateUidIdentifier('default');
+                const variableDeclaration = t.variableDeclaration('const', [t.variableDeclarator(defaultUid, path.parent.right)]);
+                const exportDeclaration = t.exportDefaultDeclaration(defaultUid);
+                statement.push(variableDeclaration, exportDeclaration);
+              }
+              path.parentPath.parentPath.replaceWithMultiple(statement);
+            } else {
+              // exports.a = require('a').b.c.d => import * as _a from 'a'; export const a = _a.b.c.d;
+              const exportStatement = t.exportNamedDeclaration(t.variableDeclaration('const', [t.variableDeclarator(leftIdentifier, path.parent.right)]));
               path.parentPath.parentPath.replaceWith(exportStatement);
             }
             // skip callExpression
@@ -370,8 +466,7 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
             path.parentPath.parentPath.replaceWith(exportStatement);
           }
         } else if (t.isCallExpression(right) && t.isIdentifier(right.callee, { name: 'require' })) {
-          // exports.a = require('a'); => import _uid from 'a'; export const a = _uid;
-          const uid = path.scope.generateUidIdentifier("uid");
+          // exports.a = require('a'); => import * as _a from 'a'; export const a = _a;
           if (!t.isStringLiteral(right.arguments[0])) {
             errors.push(new TransformError("require's arguments should be a string", {
               column: path.node.loc.end.column,
@@ -380,14 +475,15 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
             }));
             return;
           }
-          const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], right.arguments[0]);
+          const uid = path.scope.generateUidIdentifier(right.arguments[0].value);
+          const importStatement = t.importDeclaration([t.importNamespaceSpecifier(uid)], right.arguments[0]);
           root.node.body.unshift(importStatement);
           if (isExportDefault) {
-            // exports.default = require('a'); => import _uid from 'a'; export default _uid;
+            // exports.default = require('a'); => import * as _a from 'a'; export default _a;
             const exportDeclaration = t.exportDefaultDeclaration(uid);
             path.parentPath.parentPath.replaceWith(exportDeclaration);
           } else {
-            // exports.a = require('a'); => import _uid from 'a'; export const a = _uid;
+            // exports.a = require('a'); => import * as _a from 'a'; export const a = _a;
             const exportStatement = t.exportNamedDeclaration(t.variableDeclaration('const', [t.variableDeclarator(leftIdentifier, uid)]));
             path.parentPath.parentPath.replaceWith(exportStatement);
           }
@@ -407,71 +503,35 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
         }
       }
   
-  
       // module.exports = xxx; => export default xxx
       if (
         t.isIdentifier(path.node.object, { name: 'module' }) && 
         t.isIdentifier(path.node.property, { name: 'exports' }) && 
         t.isAssignmentExpression(path.parent)
       ) {
-        const right = path.parent.right;
-        if (t.isMemberExpression(right)) {
-          // module.exports = require('a').a; => import uid0 from 'a'; const uid1 = uid0.a; export default uid;
-          // find the nested memberExpression
-          const memberExpression = findCallExpressionWrapper(right);
-          if (memberExpression && t.isCallExpression(memberExpression.object) && t.isIdentifier(memberExpression.object.callee, { name: 'require' })) {
-            // module.exports = require('a').b.c.d => import uid from 'a'; const a = _uid.b.c.d; export default a;
-            const uid = path.scope.generateUidIdentifier("uid");
-            if (!t.isStringLiteral(memberExpression.object.arguments[0])) {
-              errors.push(new TransformError("require's arguments should be a string", {
-                column: path.node.loc.end.column,
-                line: path.node.loc.end.line,
-                filename: (path.node.loc as any).filename
-              }));
-              return;
-            }
-            const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], memberExpression.object.arguments[0]);
-            root.node.body.unshift(importStatement);
-            // replace the callExpression to the uid
-            memberExpression.object = uid;
-            // generate const statement
-            const variableName = path.scope.generateUidIdentifier("uid");
-            const variableStatement = t.variableDeclaration('const', [t.variableDeclarator(variableName, right)]);
-            const exportStatement = t.exportDefaultDeclaration(variableName);
-            path.parentPath.parentPath.replaceWithMultiple([variableStatement, exportStatement]);
-            // skip callExpression
-            const assignmentExpression = path.findParent(p => t.isAssignmentExpression(p));
-            assignmentExpression?.skip();
-          } else {
-            // module.exports = b.c => const uid = b.c; export default uid;
-            const variableName = path.scope.generateUidIdentifier("uid");
-            const variableStatement = t.variableDeclaration('const', [t.variableDeclarator(variableName, right)]);
-            const exportStatement = t.exportDefaultDeclaration(variableName);
-            path.parentPath.parentPath.replaceWithMultiple([variableStatement, exportStatement]);
-          }
-        } else if (t.isCallExpression(right) && t.isIdentifier(right.callee, { name: 'require' })) {
-          // module.exports = require('a') => export { default } from 'a';
-          if (!t.isStringLiteral(right.arguments[0])) {
-            errors.push(new TransformError("require's arguments should be a string", {
-              column: path.node.loc.end.column,
-              line: path.node.loc.end.line,
-              filename: (path.node.loc as any).filename
-            }));
+        if (!t.isObjectExpression(path.parent.right)) {
+          // module.exports = a; module.exports = function () {}
+          errors.push(new TransformError("module.exports right side should be an object. If you want to export an function or variable, using 'module.exports.default = expression' instead", {
+            column: path.node.loc.end.column,
+            line: path.node.loc.end.line,
+            filename: (path.node.loc as any).filename
+          }));
+          return;
+        } else {
+          const isPureExport = path.parent.right.properties.every(property => {
+            return t.isObjectProperty(property) && t.isIdentifier(property.key) && t.isIdentifier(property.value) && property.key.name === property.value.name;
+          });
+          if (isPureExport) {
+            // module.exports = { a };  => export { a }
+            // module.exports = {};  => export {}
+            // const declaration = t.exportDefaultDeclaration(path.parent.right);
+            const specifiers =  path.parent.right.properties.map(property => {
+              return t.exportSpecifier((property as t.ObjectProperty).key as t.Identifier, (property as t.ObjectProperty).key as t.Identifier);
+            });
+            const declaration = t.exportNamedDeclaration(null, specifiers);
+            path.parentPath.parentPath.replaceWith(declaration);
             return;
           }
-          const exportStatement = t.exportNamedDeclaration(
-            null, 
-            [t.exportSpecifier(t.identifier('default'), t.identifier('default'))],
-            right.arguments[0]
-          );
-          path.parentPath.parentPath.replaceWith(exportStatement);
-          // skip callExpression
-          const assignmentExpression = path.findParent(p => t.isAssignmentExpression(p));
-          assignmentExpression?.skip();
-        } else {
-          // module.exports = xxx;
-          const declaration = t.exportDefaultDeclaration(path.parent.right);
-          path.parentPath.parentPath.replaceWith(declaration);
         }
       }
       // module.exports.xxx = xxx; => export const xxx
@@ -485,6 +545,7 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
         const right = path.parentPath.parent.right;
         let leftIdentifier;
         let isExportDefault = false;
+        let isPureImportDefault = false;
         if (t.isStringLiteral(leftProperty)) {
           // module.exports['xxx'] = xxx; => export const xxx = xxx;
           if (leftProperty.value === 'default') {
@@ -516,10 +577,9 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
         }
         if (t.isMemberExpression(right)) {
           // find the nested memberExpression
-          const memberExpression = findCallExpressionWrapper(right);
+          let memberExpression = findCallExpressionWrapper(right);
           if (memberExpression && t.isCallExpression(memberExpression.object) && t.isIdentifier(memberExpression.object.callee, { name: 'require' })) {
-            // module.exports.a = require('a').b.c.d => import _uid from 'a'; export const a = _uid.b.c.d;
-            const uid = path.scope.generateUidIdentifier("uid");
+            // module.exports.a = require('a').b.c.d => import * as _a from 'a'; export const a = _a.b.c.d;
             if (!t.isStringLiteral(memberExpression.object.arguments[0])) {
               errors.push(new TransformError("require's arguments should be a string", {
                 column: path.node.loc.end.column,
@@ -528,45 +588,87 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
               }));
               return;
             }
-            const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], memberExpression.object.arguments[0]);
-            root.node.body.unshift(importStatement);
-            // replace the callExpression to the uid
-            memberExpression.object = uid;
-            if (isExportDefault) {
-              // module.exports.default = require('a').b.c.d; => import _uid from 'a'; const _default = _uid.b.c.d; export default _uid;
-              const defaultUid = path.scope.generateUidIdentifier('default');
-              const variableDeclaration = t.variableDeclaration('const', [t.variableDeclarator(defaultUid, right)]);
-              const exportDeclaration = t.exportDefaultDeclaration(defaultUid);
-              path.parentPath.parentPath.parentPath.replaceWithMultiple([
-                variableDeclaration,
-                exportDeclaration
-              ]);
+            let uid;
+            if (t.isIdentifier(memberExpression.property, { name: 'default' }) || t.isStringLiteral(memberExpression.property, { value: 'default' })) {
+              uid = path.scope.generateUidIdentifier(memberExpression.object.arguments[0].value);
+              const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], memberExpression.object.arguments[0]);
+              root.node.body.unshift(importStatement);
+              if (right === memberExpression) {
+                // the right side are
+                // require('a').default 
+                // require('a')['default']
+                // => import _a from 'a'
+                path.parentPath.parent.right = uid;
+                isPureImportDefault = true;
+              } else {
+                // right side are
+                // require('a').default.a
+                // require('a').['default'].a
+                // memberExpression = uid;
+                function replaceRequireMemberExpressionWith(node, newNode) {
+                  if (
+                    t.isMemberExpression(node) && 
+                    t.isMemberExpression(node.object) && 
+                    t.isCallExpression(node.object.object) &&
+                    t.isIdentifier(node.object.object.callee, { name: 'require' })
+                  ) {
+                    node.object = newNode;
+                  } else if (t.isMemberExpression(node) && t.isMemberExpression(node.object)) {
+                    replaceRequireMemberExpressionWith(node.object, newNode);
+                  }
+                }
+                replaceRequireMemberExpressionWith(path.parentPath.parent.right, uid);
+              }
             } else {
-              // module.exports.a = require('a').b.c.d => import _uid from 'a'; export const a = _uid.b.c.d;
-              const exportStatement = t.exportNamedDeclaration(t.variableDeclaration('const', [t.variableDeclarator(leftIdentifier, right)]));
+              // require('a').a 
+              // require('a')['a']
+              // require('a')['a'].b
+              uid = path.scope.generateUidIdentifier(memberExpression.object.arguments[0].value);
+              const importStatement = t.importDeclaration([t.importNamespaceSpecifier(uid)], memberExpression.object.arguments[0]);
+              root.node.body.unshift(importStatement);
+              // replace the callExpression to the uid
+              memberExpression.object = uid;
+            }
+            if (isExportDefault) {
+              // module.exports.default = require('a').b.c.d; => import * as _a from 'a'; const _default = _a.b.c.d; export default _uid;
+              const statement = [];
+              if (isPureImportDefault) {
+                const exportDeclaration = t.exportDefaultDeclaration(uid);
+                statement.push(exportDeclaration);
+              } else {
+                // module.exports.default = require('a').default;
+                const defaultUid = path.scope.generateUidIdentifier('default');
+                const variableDeclaration = t.variableDeclaration('const', [t.variableDeclarator(defaultUid, path.parentPath.parent.right)]);
+                const exportDeclaration = t.exportDefaultDeclaration(defaultUid);
+                statement.push(variableDeclaration, exportDeclaration);
+              }
+              path.parentPath.parentPath.parentPath.replaceWithMultiple(statement);
+            } else {
+              // module.exports.a = require('a').b.c.d => import * as _a from 'a'; export const a = _a.b.c.d;
+              const exportStatement = t.exportNamedDeclaration(t.variableDeclaration('const', [t.variableDeclarator(leftIdentifier, path.parentPath.parent.right)]));
               path.parentPath.parentPath.parentPath.replaceWith(exportStatement);
             }
             // skip callExpression
             const assignmentExpression = path.findParent(p => t.isAssignmentExpression(p));
             assignmentExpression?.skip();
+            // assignmentExpression.remove();
           } else {
             if (isExportDefault) {
               // module.exports.default = a.b.c; => cosnt _default = a.b.c; export default _default;
               const defaultUid = path.scope.generateUidIdentifier('default');
-              const variableDeclaration = t.variableDeclaration('const', [t.variableDeclarator(defaultUid, right)]);
+              const variableDeclaration = t.variableDeclaration('const', [t.variableDeclarator(defaultUid, path.parentPath.parent.right)]);
               const exportDeclaration = t.exportDefaultDeclaration(defaultUid);
               path.parentPath.parentPath.parentPath.replaceWithMultiple([
                 variableDeclaration, exportDeclaration
               ]);
             } else {
               // module.exports.a = b.c; => export const a = b.c;
-              const declaration = t.exportNamedDeclaration(t.variableDeclaration('const', [t.variableDeclarator(leftIdentifier, right)]));
+              const declaration = t.exportNamedDeclaration(t.variableDeclaration('const', [t.variableDeclarator(leftIdentifier, path.parentPath.parent.right)]));
               path.parentPath.parentPath.parentPath.replaceWith(declaration);
             }
           }
         } else if (t.isCallExpression(right) && t.isIdentifier(right.callee, { name: 'require' })) {
-          // module.exports.a = require('a'); => import _uid from 'a'; export const a = _uid;
-          const uid = path.scope.generateUidIdentifier("uid");
+          // module.exports.a = require('a'); => import * as _a from 'a'; export const a = _a;
           if (!t.isStringLiteral(right.arguments[0])) {
             errors.push(new TransformError("require's arguments should be a string", {
               column: path.node.loc.end.column,
@@ -575,14 +677,15 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
             }));
             return;
           }
-          const importStatement = t.importDeclaration([t.importDefaultSpecifier(uid)], right.arguments[0]);
+          const uid = path.scope.generateUidIdentifier(right.arguments[0].value);
+          const importStatement = t.importDeclaration([t.importNamespaceSpecifier(uid)], right.arguments[0]);
           root.node.body.unshift(importStatement);
           if (isExportDefault) {
-            // module.exports.default = require('a') => import a from 'a'; export default a;
+            // module.exports.default = require('a') => import * as _a from 'a'; export default _a;
             const exportDeclaration = t.exportDefaultDeclaration(uid);
             path.parentPath.parentPath.parentPath.replaceWith(exportDeclaration);
           } else {
-            // module.exports.a = require('a'); => import _uid from 'a'; export const a = _uid;
+            // module.exports.a = require('a'); => import * as _a from 'a'; export const a = _a;
             const exportStatement = t.exportNamedDeclaration(t.variableDeclaration('const', [t.variableDeclarator(leftIdentifier, uid)]));
             path.parentPath.parentPath.parentPath.replaceWith(exportStatement);
           }
@@ -614,6 +717,8 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
   };
 }
 
+const content = "exports['default'] = require('a').default.a";
+fs.writeFileSync(path.resolve(__dirname, 'output.js'), transform(content).code)
 
 export default transform;
 
