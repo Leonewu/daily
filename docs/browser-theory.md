@@ -40,7 +40,7 @@ GPU 初衷是为了实现3D CSS效果。随着发展，Chrome 的 UI 界面都�
 7. js 交给 js 引擎解析
 8. 将 DOM 和 CSSOM 合成渲染树
 9. layout 计算出渲染树每个节点的具体坐标位置
-10. layerize 图层化，根据层级关系分图层（在 chrome 的 layer 标签可以看到图层），涉及的属性有 transform，opacity，will-change，filters
+10. layerize 图层化，根据层级关系分图层（在 chrome 的 layer 标签可以看到图层），涉及的属性有 transform，will-change
 11. paint 绘制图层，调用 canvas api
 12. rasterization 光栅化，生成每个像素的颜色值
 13. 输出到页面

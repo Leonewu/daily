@@ -127,3 +127,15 @@ function climb(n) {
   recur(n);
   return res;
 }
+
+function levelOrder(root) {
+  const q = root ? [root] : [];
+  const res = [];
+  while (q.length) {
+    const node = q.shift();
+    res.push(node.val);
+    node.left && q.push(node.left);
+    node.right && q.push(node.right);
+  }
+  return res;
+}

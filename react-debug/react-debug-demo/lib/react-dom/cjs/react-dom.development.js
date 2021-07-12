@@ -20935,7 +20935,6 @@ function remountFiber(current, oldWorkInProgress, newWorkInProgress) {
 
 function beginWork(current, workInProgress, renderLanes) {
   var updateLanes = workInProgress.lanes;
-  debugger
   {
     if (workInProgress._debugNeedsRemount && current !== null) {
       // This will restart the begin phase with a new fiber.
@@ -27426,7 +27425,7 @@ function resolveLazyComponentTag(Component) {
 
 function createWorkInProgress(current, pendingProps) {
   var workInProgress = current.alternate;
-
+  debugger
   if (workInProgress === null) {
     // We use a double buffering pooling technique because we know that we'll
     // only ever need at most two versions of a tree. We pool the "other" unused

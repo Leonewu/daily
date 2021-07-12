@@ -46,3 +46,14 @@ completework 创建 dom 元素，设置属性，completework 递归执行完之�
 
 useLayoutEffect 是在 dom 更新之后执行，上一个 useLayoutEffect 的销毁函数和本次 useLayoutEffect 的回调函数是同步执行，在 dom 渲染之后同步执行  
 useEffect 则是在 dom 渲染之后异步执行，执行时机比 useLayoutEffect 慢
+
+## 双缓存树
+
+即 current 和 current.alternate
+
+1. 第一次渲染时，会创建 rootFiber 并且创建 rootFiber.alternate
+2. setState 更新时，进入 createWorkInProgress 时，会沿着 rootFiber 创建每一个子节点的 alternate，此时每一个 fiber 都有对应的 alternate，双缓存树已经完成了
+3. 再次 setState 时，已经有了双缓冲树了。
+
+setState 之后，createWorkInProgress(current, pendingProps) => 此时 wrokInProgress = current.alternate !== null，根据 workInProgress 节点生成新的 fiber 节点
+=> reconcileChildren
