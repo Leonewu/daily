@@ -1,5 +1,7 @@
 # 排序算法
 
+排序是常见的面试题，一般只需了解几种效率高的排序就够了，并且也要掌握稳定性，时间复杂度和空间复杂度。
+
 ## 冒泡排序
 
 冒泡排序，就是让最大的数往右边冒，一轮下来，最右边的数肯定是最大的
@@ -87,4 +89,84 @@ n/4 n/4  n/4 n/4
 1   1
 ```
 
-画出快排的二叉树，数组长度为 n，每一层需要执行 n 次，总共有 logn 层，所以为 O(nlogn)
+画出快排的二叉树，数组长度为 n，每一层需要执行 n 次，总共有 logn 层，所以为 O(nlogn)  
+最优的情况下，每次拿到的 pivot 都能平分数组，也就是上面的二叉树模型，时间复杂度为 O(nlogn)  
+最差的情况下，每次拿到的 pivot 是最小或者最大值，这种情况，就相当于冒泡排序，时间复杂度为 O(n^2)
+
+### 快排空间复杂度
+
+快排为递归算法，空间复杂度为递归的深度  
+最优情况下，就是完美的二叉树模型，空间复杂度为二叉树的层数 O(logn)  
+最差情况下，为冒泡排序的空间复杂度 O(n)
+
+### 原地快排
+
+原地快排的优点是只进行数组的元素交换，不需要创建新的数组
+要点：分区，返回原数组
+
+```js
+function quickSort(a, l, r) {
+  if (a.length > 1) {
+    const i = partition(a, l, r);
+    if (l < i - 1) {
+      quickSort(a, l, i - 1);
+    } 
+    if (i < r) {
+      quickSort(a, i, r);
+    }
+  }
+  return a;
+  function partition(a, l, r) {
+    let p = a[0];
+    let i = l;
+    let j = r;
+    while(i <= j) {
+      while(a[i] < p) {
+        i++;
+      }
+      while (a[j] > p) {
+        j--;
+      }
+      if (i < j) {
+        [a[i], a[j]] = [a[j], a[i]];
+        i++;
+        j--;
+      }
+    }
+    return i;
+  }
+}
+```
+
+```js
+function quickSort(a, l, r) {
+  if (a.length > 1) {
+    let index = partition(a, l ,r);
+    if (index - 1 > l) {
+      quickSort(a, l, index - 1);
+    }
+    if (index + 1 < r) {
+      quickSort(a, index + 1, r);
+    }
+  }
+  return a;
+  function partition(a, l, r) {
+    const p = a[l];
+    let i = l;
+    let j = r;
+    while(i !== j) {
+      while(a[j] >= p && i < j) {
+        j--;
+      }
+      while(a[i] <= p && i < j) {
+        i++;
+      }
+      if (i < j) {
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+    }
+    [a[i], a[l]] = [a[l], a[i]];
+    return i;
+  }
+}
+```
