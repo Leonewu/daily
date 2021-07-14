@@ -1,4 +1,4 @@
-import transform from '../index';
+import transform from '../src/index';
 
 export const cases = {
   

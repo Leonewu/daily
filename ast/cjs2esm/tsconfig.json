@@ -6,8 +6,10 @@
     "esModuleInterop": true,
     "sourceMap": false,
     "outDir": "lib",
-    "rootDir": "./",
-    "baseUrl": "./"
+    "rootDir": "src",
+    "baseUrl": "./",
+    "importHelpers": true
   },
-  "files": ["./index.ts"],
+  "includes": ["src/**/*.ts"],
+  "exclude": ["__tests__"]
 }

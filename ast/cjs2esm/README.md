@@ -81,7 +81,7 @@ Remember to check whether the errors is empty or not.
         module.exports[a--] = 123;
         ```
 
-    3. require/exports in a block
+    3. require/exports isn't at top level or in a block
 
         ```js
         if (true) require('a');
