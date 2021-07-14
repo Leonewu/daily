@@ -7,7 +7,7 @@ const traverse_1 = tslib_1.__importDefault(require("@babel/traverse"));
 const generator_1 = tslib_1.__importDefault(require("@babel/generator"));
 const visitor_1 = tslib_1.__importDefault(require("./visitor"));
 const plugin_1 = tslib_1.__importDefault(require("./plugin"));
-const core_1 = tslib_1.__importDefault(require("@babel/core"));
+const babel = tslib_1.__importStar(require("@babel/core"));
 function transform(code, options) {
     const { silent } = options || {};
     const errors = [];
@@ -29,7 +29,8 @@ function transform(code, options) {
 // const content = "module.exports = { a, b }";
 // fs.writeFileSync(path.resolve(__dirname, 'output.js'), transform(content).code)
 function babelTransform(code) {
-    return core_1.default.transform(code, { plugins: [plugin_1.default] });
+    // use as a babel plugin
+    return babel.transform(code, { plugins: [plugin_1.default] });
 }
 exports.babelTransform = babelTransform;
 exports.default = transform;

@@ -5,7 +5,7 @@ import type { GeneratorResult } from "@babel/generator";
 import TransformError from './Error';
 import getVisitors from './visitor';
 import plugin from './plugin';
-import babel from '@babel/core';
+import * as babel from '@babel/core';
 import fs from 'fs';
 import path from 'path';
 
@@ -155,6 +155,7 @@ function transform(code: string, options?: TransformOptions): (GeneratorResult &
 // fs.writeFileSync(path.resolve(__dirname, 'output.js'), transform(content).code)
 
 export function babelTransform(code: string) {
+  // use as a babel plugin
   return babel.transform(code, { plugins: [plugin] });
 }
 
