@@ -111,13 +111,13 @@ function quickSort(a, l, r) {
     if (l < i - 1) {
       quickSort(a, l, i - 1);
     } 
-    if (i < r) {
-      quickSort(a, i, r);
+    if (i + 1 < r) {
+      quickSort(a, i + 1, r);
     }
   }
   return a;
   function partition(a, l, r) {
-    let p = a[0];
+    let p = a[Math.floor((l + r) / 2)];
     let i = l;
     let j = r;
     while(i <= j) {
@@ -127,7 +127,7 @@ function quickSort(a, l, r) {
       while (a[j] > p) {
         j--;
       }
-      if (i < j) {
+      if (i <= j) {
         [a[i], a[j]] = [a[j], a[i]];
         i++;
         j--;
