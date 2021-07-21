@@ -1,38 +1,43 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react'
+import type React from 'react'
+import { useUnmountRef } from './useUnmountRef'
 
 function isDOM(node: any) {
   if (typeof HTMLElement === 'object') {
-    return node instanceof HTMLElement;
+    return node instanceof HTMLElement
   }
   return (
-    node && typeof node === 'object' && node.nodeType === 1 && typeof node.nodeName === 'string'
-  );
+    node &&
+    typeof node === 'object' &&
+    node.nodeType === 1 &&
+    typeof node.nodeName === 'string'
+  )
 }
 
 function throttle(fn: Function, delay: number) {
-  let loading = false;
+  let loading = false
   return function t(this: any, ...args: any[]) {
     if (loading) {
-      return;
+      return
     }
-    loading = true;
-    fn.call(this, ...args);
+    loading = true
+    fn.call(this, ...args)
     setTimeout(() => {
-      loading = false;
-    }, delay);
-  };
+      loading = false
+    }, delay)
+  }
 }
 
 function debounce(fn: Function, delay: number) {
-  let timer: any = null;
+  let timer: any = null
   return function t(this: any, ...args: any[]) {
     if (timer) {
-      clearTimeout(timer);
+      clearTimeout(timer)
     }
     timer = setTimeout(() => {
-      fn.call(this, ...args);
-    }, delay);
-  };
+      fn.call(this, ...args)
+    }, delay)
+  }
 }
 
 /**
@@ -46,69 +51,71 @@ function debounce(fn: Function, delay: number) {
  */
 export const useHideCursor = (
   ref: HTMLElement | React.MutableRefObject<HTMLElement>,
-  wait: number = 10000,
+  wait: number = 10000
 ) => {
-  const [isHide, setIsHide] = useState(false);
-
+  const [isHide, setIsHide] = useState(false)
+  const isUnmount = useUnmountRef()
   const hide = useCallback(
     debounce(() => {
-      setIsHide(true);
+      if (isUnmount.current) return
+      setIsHide(true)
     }, wait),
-    [],
-  );
+    []
+  )
 
   const onMouseMove = useCallback(
     throttle(() => {
-      setIsHide(false);
-      hide();
+      if (isUnmount.current) return
+      setIsHide(false)
+      hide()
     }, 1000),
-    [],
-  );
+    []
+  )
 
   useEffect(() => {
-    let node: HTMLElement;
+    let node: HTMLElement
     if (isDOM(ref)) {
-      node = ref as HTMLElement;
+      node = ref as HTMLElement
     } else {
-      node = (ref as React.MutableRefObject<HTMLElement>).current;
+      node = (ref as React.MutableRefObject<HTMLElement>).current
     }
-    node.addEventListener('mousemove', onMouseMove);
+    node.addEventListener('mousemove', onMouseMove)
     return () => {
-      node.removeEventListener('mousemove', onMouseMove);
-    };
-  }, [ref]);
+      node.removeEventListener('mousemove', onMouseMove)
+    }
+  }, [ref])
 
   useEffect(() => {
-    let node: HTMLElement;
+    let node: HTMLElement
     if (isDOM(ref)) {
-      node = ref as HTMLElement;
+      node = ref as HTMLElement
     } else {
-      node = (ref as React.MutableRefObject<HTMLElement>).current;
+      node = (ref as React.MutableRefObject<HTMLElement>).current
     }
     if (isHide) {
-      node.classList.add('__hideCursor__');
+      node.classList.add('__hideCursor__')
     } else {
-      node.classList.remove('__hideCursor__');
+      node.classList.remove('__hideCursor__')
     }
     return () => {
-      node.classList.remove('__hideCursor__');
-    };
-  }, [isHide]);
+      node.classList.remove('__hideCursor__')
+    }
+  }, [isHide])
 
   useEffect(() => {
-    const id = '__HIDE_CURSOR_STYLE__';
+    const id = '__HIDE_CURSOR_STYLE__'
     if (document.getElementById(id)) {
-      return;
+      return
     }
-    const style = document.createElement('style');
-    style.id = id;
+    const style = document.createElement('style')
+    style.id = id
     style.innerHTML =
-      '.__hideCursor__ { cursor: none !important; }.__hideCursor__ > * { cursor: none !important; }';
-    document.getElementsByTagName('head')[0].appendChild(style);
-  }, []);
+      '.__hideCursor__ { cursor: none !important; }.__hideCursor__ > * { cursor: none !important; }'
+    document.getElementsByTagName('head')[0].appendChild(style)
+  }, [])
 
-  return [isHide];
-};
+  return [isHide]
+}
 
 /**
  * @describtion 获取鼠标是否在 wait 时间内不移动
@@ -117,30 +124,33 @@ export const useHideCursor = (
  * const [isMouseStop] = useMouseStop(10000);
  */
 export const useMouseStop = (wait: number = 10000) => {
-  const [isStop, setIsStop] = useState(true);
+  const [isStop, setIsStop] = useState(true)
+  const isUnmount = useUnmountRef()
   const stop = useCallback(
     debounce(() => {
-      setIsStop(true);
+      if (isUnmount.current) return
+      setIsStop(true)
     }, wait),
-    [],
-  );
+    []
+  )
 
   const onMouseMove = useCallback(
     throttle(
       () => {
-        setIsStop(false);
-        stop();
+        if (isUnmount.current) return
+        setIsStop(false)
+        stop()
       },
-      wait < 1000 ? 200 : 1000,
+      wait < 1000 ? 200 : 1000
     ),
-    [],
-  );
+    []
+  )
 
   useEffect(() => {
-    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mousemove', onMouseMove)
     return () => {
-      document.removeEventListener('mousemove', onMouseMove);
-    };
-  }, []);
-  return [isStop];
-};
+      document.removeEventListener('mousemove', onMouseMove)
+    }
+  }, [])
+  return [isStop]
+}

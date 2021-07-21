@@ -1,9 +1,9 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react'
 
 type OptionsType = {
   /** 是否在首次调用时立即执行 */
-  immediate?: boolean;
-};
+  immediate?: boolean
+}
 /**
  * @description
  * @example
@@ -11,32 +11,36 @@ type OptionsType = {
       // do something
     }, 5000);
 */
-export function useInterval(callback: Function, delay: number, options?: OptionsType) {
-  const savedCallback = useRef<any>();
-  const timer = useRef<any>(null);
+export function useInterval(
+  callback: Function,
+  delay: number,
+  options?: OptionsType
+) {
+  const savedCallback = useRef<any>()
+  const timer = useRef<any>(null)
   useEffect(() => {
-    savedCallback.current = callback;
-  }, [callback]);
+    savedCallback.current = callback
+  }, [callback])
 
   const start = useCallback(
     (...args) => {
       function tick() {
-        savedCallback.current?.(...args);
+        savedCallback.current?.(...args)
       }
       if (delay !== null) {
         if (options?.immediate) {
-          tick();
+          tick()
         }
-        timer.current = setInterval(tick, delay);
+        timer.current = setInterval(tick, delay)
       }
     },
-    [delay],
-  );
+    [delay]
+  )
 
   return [
     start,
     () => {
-      clearInterval(timer.current);
+      clearInterval(timer.current)
     },
-  ];
+  ]
 }
